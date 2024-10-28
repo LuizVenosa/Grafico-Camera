@@ -1,0 +1,171 @@
+---
+title: "R_test"
+output: html_document
+date: "2024-10-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+```{r}
+regress2022_dados$percentage_votos_centrao <- regress2022_dados$percentage_votos_centrao*100
+```
+
+
+
+```{r}
+reg1 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao), data=regress2022_dados)
+```
+
+```{r}
+summary(reg1)
+```
+```{r}
+reg2 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + Impostos, data=regress2022_dados)
+```
+
+
+```{r}
+summary(reg2)
+```
+
+
+```{r}
+regress2022_dados$vab <- relevel(factor(regress2022_dados$vab), ref = "Produção florestal, pesca e aquicultura")
+
+reg3 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + Impostos + vab, data=regress2022_dados)
+summary(reg3)
+```
+
+```{r}
+reg4 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + factor(uf), data = regress2022_dados)
+summary(reg4)
+```
+
+```{r}
+colnames(bolsa_fam)[2] <- "ibge"
+colnames(bolsa_fam)[4] <- "num_bolsa"
+regress2022_dados <- regress2022_dados %>%  left_join(select(bolsa_fam, ibge, num_bolsa), by="ibge")
+```
+
+```{r}
+reg5 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao)+ log(Impostos) + num_bolsa, data = regress2022_dados)
+summary(reg5)
+```
+```{r}
+regress2022_dados$percent_bolsa <- (regress2022_dados$num_bolsa / regress2022_dados$populacao)*100
+reg6 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa, data = regress2022_dados)
+summary(reg6)
+```
+
+```{r}
+vif(reg6)
+```
+```{r}
+ggplot(data=sample_n(regress2022_dados, 5000), aes(taxa_analfabetismo, percentage_votos_centrao, color=regiao)) + geom_point()
+
+```
+
+```{r}
+ggplot(data=sample_n(regress2022_dados, 2500), aes(taxa_analfabetismo, percentage_votos_centrao, color=`Administração, defesa, educação e saúde públicas e seguridade social`)) + geom_point() + theme(legend.position="bottom")
+```
+```{r}
+ggplot(data=sample_n(regress2022_dados, 1000), aes(log(pib_per_capita), percentage_votos_centrao, color=regiao, size=populacao)) + geom_point() + theme(legend.position="bottom")
+```
+```{r}
+mutinformation(discretize(regress2022_dados$percentage_votos_centrao), discretize(regress2022_dados$Impostos))
+
+```
+
+```{r}
+
+reg7 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + factor(uf) , data = regress2022_dados)
+summary(reg7)
+```
+
+```{r}
+reg8 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + factor(regiao), data = regress2022_dados_teste)
+summary(reg8)
+```
+
+```{r}
+reg9 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + percent_bolsa * factor(regiao) , data = regress2022_dados)
+summary(reg9)
+```
+
+```{r}
+reg10 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + taxa_analfabetismo * factor(regiao) + percent_bolsa * factor(regiao) , data = regress2022_dados)
+summary(reg10)
+```
+```{r}
+emendas_cidade <- emendas %>% 
+  group_by(`Favorecido do Pagamento (Município)`) %>%
+  summarize(Total = sum(`Pago + RP (Favorecido lista OB) a órgãos do governo`))
+emendas_cidade
+```
+```{r}
+regress2022_dados_teste <- regress2022_dados %>%
+  left_join(emendas_cidade, by=c("municipio" = "Favorecido do Pagamento (Município)"))
+```
+```{r}
+regress2022_dados_teste = regress2022_dados_teste %>%
+  rename(Emendas = Total)
+```
+
+```{r}
+reg10 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + log(Emendas), data = regress2022_dados_teste)
+summary(reg10)
+```
+```{r}
+ggplot(regress2022_dados_teste, aes(x = log(Emendas))) +
+  geom_density(fill = "skyblue") +
+  labs(title = "Distribution of Variable", x = "Your Variable", y = "Frequency")
+```
+
+```{r}
+ggplot(data=sample_n(regress2022_dados_teste, 2500), aes(log(Emendas), percentage_votos_centrao, color=regiao)) + geom_point() + theme(legend.position="bottom")
+```
+```{r}
+mean(regress2022_dados_teste$Emendas, na.rm=TRUE)
+median(regress2022_dados_teste$Emendas, na.rm=TRUE)
+```
+
+```{r}
+reg11 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + factor(regiao)* log(Emendas), data = regress2022_dados_teste)
+summary(reg11)
+```
+```{r}
+reg12 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa *factor(regiao) + factor(regiao)* log(Emendas), data = regress2022_dados_teste)
+summary(reg12)
+```
+
+```{r}
+reg12 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + factor(regiao) + log(Emendas), data = regress2022_dados_teste)
+summary(reg12)
+```
+
+```{r}
+group_means_table <- regress2022_dados_teste %>%
+         group_by(regiao) %>%
+         summarize(mean_value = mean(log(Emendas), na.rm = TRUE), 
+                   sd_value = sd(log(Emendas), na.rm=TRUE)) 
+         
+                       
+
+ggplot(group_means_table, aes(x = regiao, y = mean_value)) +
+  geom_point(size = 3, color = "blue") +
+  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value), width = 0.2) +
+  labs(title = "Mean of Variable by Group with Error Bars", x = "Group", y = "Mean Value") +
+  theme_minimal()
+
+```
+
