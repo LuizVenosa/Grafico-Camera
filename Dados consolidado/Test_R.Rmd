@@ -114,10 +114,8 @@ emendas_cidade
 ```
 ```{r}
 regress2022_dados_teste <- regress2022_dados %>%
-  left_join(emendas_cidade, by=c("municipio" = "Favorecido do Pagamento (Município)"))
-```
-```{r}
-regress2022_dados_teste = regress2022_dados_teste %>%
+  mutate(municipio = toupper(municipio)) %>%
+  left_join(emendas_cidade, by = c("municipio" = "Favorecido do Pagamento (Município)")) %>%
   rename(Emendas = Total)
 ```
 
@@ -127,6 +125,11 @@ summary(reg10)
 ```
 ```{r}
 ggplot(regress2022_dados_teste, aes(x = log(Emendas))) +
+  geom_density(fill = "skyblue") +
+  labs(title = "Distribution of Variable", x = "Your Variable", y = "Frequency")
+```
+```{r}
+ggplot(regress2022_dados_teste, aes(x = percentage_votos_centrao)) +
   geom_density(fill = "skyblue") +
   labs(title = "Distribution of Variable", x = "Your Variable", y = "Frequency")
 ```
@@ -152,20 +155,164 @@ summary(reg12)
 reg12 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa + factor(regiao) + log(Emendas), data = regress2022_dados_teste)
 summary(reg12)
 ```
+```{r}
+reg13 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao)  + factor(regiao)*log(Emendas), data = regress2022_dados_teste)
+summary(reg13)
+```
+```{r}
+reg14 <- lm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + log(populacao) + percent_bolsa+ factor(uf) + log(Emendas), data = regress2022_dados_teste)
+summary(reg14)
+```
+
+
 
 ```{r}
 group_means_table <- regress2022_dados_teste %>%
-         group_by(regiao) %>%
-         summarize(mean_value = mean(log(Emendas), na.rm = TRUE), 
-                   sd_value = sd(log(Emendas), na.rm=TRUE)) 
-         
-                       
-
-ggplot(group_means_table, aes(x = regiao, y = mean_value)) +
-  geom_point(size = 3, color = "blue") +
-  geom_errorbar(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value), width = 0.2) +
+         group_by(uf) %>%
+         summarize(mean_value = mean(Emendas/populacao, na.rm = TRUE),
+                   mean_perc = mean(percentage_votos_centrao, na.rm = TRUE)) 
+scaling_factor <- max(group_means_table$mean_value) / max(group_means_table$mean_perc)
+      
+ggplot(group_means_table) +
+  geom_point(aes(x = reorder(uf, mean_perc), y = mean_value), size = 3, color = "blue") +
+  geom_point(aes(x = reorder(uf, mean_perc), y = mean_perc * scaling_factor, size = 3, color = "red")) +
   labs(title = "Mean of Variable by Group with Error Bars", x = "Group", y = "Mean Value") +
-  theme_minimal()
+   scale_y_continuous(
+    name = "Mean Value",
+    
+    # Secondary y-axis (inverted scaling factor)
+    sec.axis = sec_axis(~ . / scaling_factor, name = "Vote Percentage")
+  ) +
 
+  theme_minimal()+
+  theme(
+    axis.title.y.left = element_text(color = "blue"),
+    axis.title.y.right = element_text(color = "red")
+  )
+```
+
+```{r}
+regress2022_dados_teste$percentage_votos_centrao <- regress2022_dados_teste$percentage_votos_centrao/100
+regress2022_dados_teste$taxa_analfabetismo <- regress2022_dados_teste$taxa_analfabetismo/100
+regress2022_dados_teste$percent_bolsa <- regress2022_dados_teste$percent_bolsa/100
+```
+```{r}
+regress2022_dados_teste <- regress2022_dados_teste %>%
+  filter(!is.na(percentage_votos_centrao), 
+         !is.na(taxa_analfabetismo), 
+         !is.na(log(pib_per_capita)),
+         !is.na(log(populacao)),
+         !is.na(percent_bolsa),
+         !is.na(log(Emendas)))
+```
+
+
+```{r}
+# Fit the linear mixed model
+lmm_model <- lmer(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + 
+                  log(populacao) + percent_bolsa + log(Emendas) + (1 | uf), data = regress2022_dados_teste)
+
+# Summary of the model
+summary(lmm_model)
+```
+```{r}
+regress2022_dados_teste <- regress2022_dados_teste %>% 
+  mutate(percentage_votos_centrao = percentage_votos_centrao + 0.00001)
+
+```
+
+
+```{r}
+
+# Fit the generalized linear mixed model
+glmm_model <- glmer(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + 
+                    log(populacao) + percent_bolsa + log(Emendas) + (1 | uf), 
+                    family = binomial(link = "logit"), data = regress2022_dados_teste)
+
+# Summary of the model
+summary(glmm_model)
+
+
+```
+```{r}
+glmm_model_region <- glmer(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) + 
+                    log(populacao) + percent_bolsa + log(Emendas) + (1 | regiao), 
+                    family = binomial(link = "logit"), data = regress2022_dados_teste)
+
+# Summary of the model
+summary(glmm_model_region)
+```
+
+
+```{r}
+model_quasi <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                       log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
+                       data = regress2022_dados_teste,
+                       family = binomial(link = "logit"),
+                       dispformula = ~1)
+summary(model_quasi)
+```
+
+```{r}
+quasi_binomial_model <- glm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                            log(populacao) + percent_bolsa + log(Emendas),
+                            data = regress2022_dados_teste,
+                            family = quasibinomial(link = "logit"))
+summary(quasi_binomial_model)
+
+```
+```{r}
+beta_model <- betareg(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                      log(populacao) + percent_bolsa + log(Emendas), 
+                      data = regress2022_dados_teste)
+summary(beta_model)
+```
+```{r}
+# Fit a beta regression with random intercepts for region
+beta_mixed_model <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                            log(populacao) + percent_bolsa + log(Emendas) + (1 | regiao),
+                            data = regress2022_dados_teste,
+                            family = beta_family(link = "logit"))
+summary(beta_mixed_model)
+```
+
+```{r}
+# Fit a beta regression with random intercepts for region
+beta_mixed_model_uf <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                            log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
+                            data = regress2022_dados_teste,
+                            family = beta_family(link = "logit"))
+summary(beta_mixed_model_uf)
+```
+
+```{r}
+beta_mixed_model_uf_sud <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                            log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
+                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao == "Sudeste"),
+                            family = beta_family(link = "logit"))
+summary(beta_mixed_model_uf_sud)
+```
+
+```{r}
+quasi_binomial_model_sud <- glm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                            log(populacao) + percent_bolsa + log(Emendas)+ factor(uf),
+                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao=="Sudeste"),
+                            family = quasibinomial(link = "logit"))
+summary(quasi_binomial_model_sud)
+```
+
+```{r}
+beta_mixed_model_uf_nord <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                            log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
+                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao == "Nordeste"),
+                            family = beta_family(link = "logit"))
+summary(beta_mixed_model_uf_nord)
+```
+```{r}
+quasi_binomial_model_nord <- glm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
+                            log(populacao) + percent_bolsa + log(Emendas) + factor(uf),
+                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao=="Nordeste"),
+                            family = quasibinomial(link = "logit"))
+summary(quasi_binomial_model_nord)
 ```
 
