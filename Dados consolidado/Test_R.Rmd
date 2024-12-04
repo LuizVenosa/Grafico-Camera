@@ -268,6 +268,25 @@ beta_model <- betareg(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_pe
 summary(beta_model)
 ```
 ```{r}
+vif(beta_model)
+```
+
+
+```{r}
+# Fit the model
+glm_model <- glm(percentage_votos_centrao ~ taxa_analfabetismo + 
+                 log(pib_per_capita) + log(populacao) + 
+                 percent_bolsa + log(Emendas), 
+                 family = quasibinomial(link = "logit"), data = regress2022_dados_teste)
+
+# Calculate robust standard errors
+robust_se <- coeftest(glm_model, vcov = vcovHC(glm_model, type = "HC3"))
+
+robust_se
+```
+
+
+```{r}
 # Fit a beta regression with random intercepts for region
 beta_mixed_model <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
                             log(populacao) + percent_bolsa + log(Emendas) + (1 | regiao),
@@ -276,43 +295,238 @@ beta_mixed_model <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(
 summary(beta_mixed_model)
 ```
 
+
 ```{r}
 # Fit a beta regression with random intercepts for region
-beta_mixed_model_uf <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
-                            log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
+beta_mixed_model_uf <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +  log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
                             data = regress2022_dados_teste,
                             family = beta_family(link = "logit"))
 summary(beta_mixed_model_uf)
 ```
 
 ```{r}
-beta_mixed_model_uf_sud <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
-                            log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
-                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao == "Sudeste"),
-                            family = beta_family(link = "logit"))
-summary(beta_mixed_model_uf_sud)
+library(glmmTMB)
+model_random_slopes <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + 
+                               log(pib_per_capita) + log(populacao) + 
+                               percent_bolsa + log(Emendas) + 
+                               (1 + log(populacao)  | uf), 
+                               family = beta_family(link = "logit"), 
+                               data = regress2022_dados_teste)
+summary(model_random_slopes)
+```
+```{r}
+# Test with complementary log-log link in glmmTMB
+model_cloglog <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + 
+                         log(pib_per_capita) + log(populacao) + 
+                         percent_bolsa + log(Emendas) + 
+                         (1 | uf), 
+                         family = beta_family(link = "cloglog"), 
+                         data = regress2022_dados_teste)
+summary(model_cloglog)
+```
+
+
+
+
+```{r}
+Receita_muni <- Receita_muni %>% 
+  mutate(percent_transfer = Receita_muni$`Receita corrente - receita bruta - transferências correntes - municipal (2021)`/ Receita_muni$`Receita corrente - receita bruta - municipal (2021)`) %>%
+  mutate(Codigo = as.numeric(Codigo))
+
+```
+```{r}
+regress2022_dados_teste <- regress2022_dados_teste %>%
+  left_join(Receita_muni %>% select(Codigo, percent_transfer), by=c("ibge"="Codigo"))
 ```
 
 ```{r}
-quasi_binomial_model_sud <- glm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
-                            log(populacao) + percent_bolsa + log(Emendas)+ factor(uf),
-                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao=="Sudeste"),
-                            family = quasibinomial(link = "logit"))
-summary(quasi_binomial_model_sud)
+regress2022_dados_teste <- regress2022_dados_teste %>%
+  left_join(percent_emprego_pub %>% select(CodMun, percent_empregado_mun), by=c("ibge"="CodMun"))
 ```
 
 ```{r}
-beta_mixed_model_uf_nord <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
-                            log(populacao) + percent_bolsa + log(Emendas) + (1 | uf),
-                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao == "Nordeste"),
+beta_mixed_model_uf_update <- glmmTMB(percentage_votos_centrao ~ taxa_analfabetismo +
+                            log(populacao) + percent_bolsa + log(Emendas) + (1 | uf) + percent_empregado_mun + percent_transfer,
+                            data = regress2022_dados_teste,
                             family = beta_family(link = "logit"))
-summary(beta_mixed_model_uf_nord)
+summary(beta_mixed_model_uf_update)
 ```
 ```{r}
-quasi_binomial_model_nord <- glm(percentage_votos_centrao ~ taxa_analfabetismo + log(pib_per_capita) +
-                            log(populacao) + percent_bolsa + log(Emendas) + factor(uf),
-                            data = regress2022_dados_teste %>% filter(regress2022_dados_teste$regiao=="Nordeste"),
-                            family = quasibinomial(link = "logit"))
-summary(quasi_binomial_model_nord)
+robust_se_beta <- coeftest(beta_mixed_model_uf_update, vcov = vcovHC(beta_mixed_model_uf_update, type = "HC3"))
+
+robust_se_beta
 ```
+
+
+```{r}
+# Fit the model
+glm_model_new <- glm(percentage_votos_centrao ~ taxa_analfabetismo  
+                  + log(populacao) + 
+                 percent_bolsa + log(Emendas)+ percent_empregado_mun + percent_transfer, 
+                 family = quasibinomial(link = "logit"), data = regress2022_dados_teste)
+
+# Calculate robust standard errors
+robust_se_new <- coeftest(glm_model_new, vcov = vcovHC(glm_model_new, type = "HC3"))
+
+robust_se_new
+```
+
+```{r}
+beta_model_new <- betareg(percentage_votos_centrao ~ taxa_analfabetismo +
+                      log(populacao) + percent_bolsa + log(Emendas)+ percent_empregado_mun + percent_transfer, 
+                      data = regress2022_dados_teste)
+summary(beta_model_new)
+```
+```{r}
+# Predicted probabilities for each observation
+# Extract coefficients from the model
+coefficients <- coef(beta_model_new)
+
+# Initialize an empty list to store probability changes
+probability_changes <- list()
+
+# Loop through each coefficient, calculate the probability change, and label it
+for (name in names(coefficients)) {
+  log_odds_change <- coefficients[name]
+  probability_change <- exp(log_odds_change) / (1 + exp(log_odds_change))
+  probability_changes[[name]] <- probability_change
+}
+
+# Print the probability changes with labels
+probability_changes
+ # View the first few predicted probabilities
+
+```
+
+```{r}
+correlations <- cor(na.omit(regress2022_dados_teste) %>% select_if(is.numeric))[, "percentage_votos_centrao"]
+sds <-
+correlations
+```
+```{r}
+calculate_correlation <- function(df, target_col) {
+  results <- data.frame(
+    Variable = character(),
+    Correlation = numeric(),
+    P_value = numeric(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (col in names(df)) {
+    if (col != target_col) {  # Skip the target column itself
+      test <- cor.test(df[[target_col]], df[[col]])
+      results <- rbind(results, data.frame(
+        Variable = col,
+        Correlation = test$estimate,
+        P_value = test$p.value
+      ))
+    }
+  }
+  return(results)
+}
+
+# Calculate correlation and p-value with 'target_column'
+correlation_results <- calculate_correlation(na.omit(regress2022_dados_teste) %>% select_if(is.numeric), "percentage_votos_centrao")
+print(correlation_results)
+```
+
+```{r}
+correlation_results %>% filter(P_value <= 0.05) %>% arrange(desc(Correlation)) %>% mutate(Variable = abbreviate(Variable, minlength=20,method="left.kept" , ))
+
+```
+
+
+```{r}
+# Install and load infotheo
+install.packages("infotheo")
+library(infotheo)
+library(dplyr)
+
+# Sample data frame with numeric columns
+set.seed(1)
+df <- data.frame(
+  target_column = rnorm(10),
+  var1 = rnorm(10),
+  var2 = rnorm(10),
+  var3 = rnorm(10)
+)
+
+# Discretize the data (mutual information typically requires discrete data)
+df_discretized <- discretize(regress2022_dados_teste)
+
+# Function to calculate mutual information with target column
+calculate_mutual_information <- function(df, target_col) {
+  results <- data.frame(
+    Variable = character(),
+    Mutual_Information = numeric(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (col in names(df)) {
+    if (col != target_col) {  # Skip the target column itself
+      mi <- mutinformation(df[[target_col]], df[[col]], method = "emp")
+      results <- rbind(results, data.frame(
+        Variable = col,
+        Mutual_Information = mi
+      ))
+    }
+  }
+  return(results)
+}
+
+# Calculate mutual information with 'target_column'
+mi_results <- calculate_mutual_information(df_discretized, "percentage_votos_centrao")
+
+# Sort by mutual information values
+sorted_mi_results <- mi_results %>%
+  arrange(desc(Mutual_Information))  # Sort in descending order by mutual information
+
+print(sorted_mi_results)
+
+```
+
+```{r}
+ggplot(data=regress2022_dados_teste, aes(percentage_votos_centrao, percent_transfer)) + geom_point()
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Assuming your data frame is called 'df'
+# Define the number of bins you want
+num_bins <- 30
+
+# Create bins and calculate average percentage_votos_centrao for each bin
+binned_data <- regress2022_dados_teste %>%
+  mutate(binned_transfer = quantile(percent_transfer, probs = seq(0, 1, length.out = num_bins + 1)), include.lowest = TRUE) %>%
+  group_by(binned_transfer) %>%
+  summarize(
+    avg_votos_centrao = mean(percentage_votos_centrao, na.rm = TRUE),
+    avg_transfer = mean(percent_transfer, na.rm = TRUE)
+  )
+
+# Plot
+ggplot(binned_data, aes(x = avg_transfer, y = avg_votos_centrao)) +
+  geom_point(color = "blue") +
+  geom_line(color = "blue") +
+  labs(
+    x = "Average Percent Transfer (Binned)",
+    y = "Average Percentage Votos Centrao",
+    title = "Binned Relationship between Percent Transfer and Percentage Votos Centrao"
+  ) +
+  theme_minimal()
+
+```
+```{r}
+regress2022_dados_teste$percent_empregado_mun[regress2022_dados_teste$percent_empregado_mun>1] = 1
+
+``` 
+
+```{r}
+ggplot(data=regress2022_dados_teste %>% filter(populacao < 1e7,regiao=="Norte"), aes(percentage_votos_centrao, percent_bolsa)) + geom_point()
+
+```
+
 
