@@ -1,0 +1,20 @@
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(readr)
+
+# Define file paths
+indice_centrao_2002 <- read_csv("indice_centrao_2002.csv")
+indice_centrao_2006 <- read_csv("indice_centrao_2006.csv")
+indice_centrao_2010 <- read_csv("indice_centrao_2010.csv")
+indice_centrao_2014 <- read_csv("indice_centrao_2014.csv")
+indice_centrao_2018 <- read_csv("indice_centrao_2018.csv")
+indice_centrao_2022 <- read_csv("indice_centrao_2022.csv")
+soja_municipios <- read_csv("soja_municipios.csv")
+
+
+
+# Display the first few rows of each dataset
+head(indice_centrao_2002)
+head(soja_municipios)
+```
