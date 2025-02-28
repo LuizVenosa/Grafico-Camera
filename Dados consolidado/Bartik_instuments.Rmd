@@ -1,20 +1,116 @@
+
 ```{r}
 # Load necessary libraries
 library(tidyverse)
 library(readr)
+library(readxl)
 
-# Define file paths
-indice_centrao_2002 <- read_csv("indice_centrao_2002.csv")
-indice_centrao_2006 <- read_csv("indice_centrao_2006.csv")
-indice_centrao_2010 <- read_csv("indice_centrao_2010.csv")
-indice_centrao_2014 <- read_csv("indice_centrao_2014.csv")
-indice_centrao_2018 <- read_csv("indice_centrao_2018.csv")
-indice_centrao_2022 <- read_csv("indice_centrao_2022.csv")
-soja_municipios <- read_csv("soja_municipios.csv")
+panel_data_indice <- read_csv("panel_data_indice.csv")
+soja_municipios <- read_csv("soja_municipio.csv", skip = 1)
+pib_2002_2009 <- read_excel("PIB dos Municípios - base de dados 2002-2009.xls")
+pib_2010_2021 <- read_excel('PIB dos Municípios - base de dados 2010-2021.xlsx')
+soja_nacional <- read_csv("soja_nacional.csv", skip=1)
 
+# Rename columns in pib_2002_2009 to match those in pib_2010_2021
+pib_2002_2009 <- pib_2002_2009 %>%
+    rename(
+        `Valor adicionado bruto da Agropecuária, a preços correntes (R$ mil)` = `Valor adicionado bruto da Agropecuária, \na preços correntes\n(R$ 1.000)`,
+        `Valor adicionado bruto da Indústria, a preços correntes (R$ mil)` = `Valor adicionado bruto da Indústria,\na preços correntes\n(R$ 1.000)`,
+        `Valor adicionado bruto dos Serviços, a preços correntes - exceto Administração, defesa, educação e saúde públicas e seguridade social (R$ mil)` = `Valor adicionado bruto dos Serviços,\na preços correntes \n- exceto Administração, defesa, educação e saúde públicas e seguridade social\n(R$ 1.000)`,
+        `Valor adicionado bruto da Administração, defesa, educação e saúde públicas e seguridade social, a preços correntes (R$ mil)` = `Valor adicionado bruto da Administração, defesa, educação e saúde públicas e seguridade social, \na preços correntes\n(R$ 1.000)`,
+        `Valor adicionado bruto total, a preços correntes (R$ mil)` = `Valor adicionado bruto total, \na preços correntes\n(R$ 1.000)`,
+        `Impostos, líquidos de subsídios, sobre produtos, a preços correntes (R$ mil)` = `Impostos, líquidos de subsídios, sobre produtos, \na preços correntes\n(R$ 1.000)`,
+        `Produto Interno Bruto, a preços correntes (R$ mil)` = `Produto Interno Bruto, \na preços correntes\n(R$ 1.000)`,
+        `Produto Interno Bruto per capita, a preços correntes (R$)` = `Produto Interno Bruto per capita, \na preços correntes\n(R$ 1,00)`
+    )
 
+# Combine PIB datasets
+pib_combined <- bind_rows(pib_2002_2009, pib_2010_2021)
 
-# Display the first few rows of each dataset
-head(indice_centrao_2002)
-head(soja_municipios)
+# Display the first few rows of the combined dataset
+head(pib_combined)
+
+# Select specific columns from the combined PIB dataset
+selected_columns <- pib_combined %>%
+    select(
+        `Código da Microrregião`,
+        `Nome da Microrregião`,
+        Ano,
+        `Nome do Município`,
+        `Código do Município`,
+        `Sigla da Unidade da Federação`,
+        `Valor adicionado bruto da Agropecuária, a preços correntes (R$ mil)`,
+        `Valor adicionado bruto da Indústria, a preços correntes (R$ mil)`,
+        `Valor adicionado bruto dos Serviços, a preços correntes - exceto Administração, defesa, educação e saúde públicas e seguridade social (R$ mil)`,
+        `Valor adicionado bruto da Administração, defesa, educação e saúde públicas e seguridade social, a preços correntes (R$ mil)`,
+        `Valor adicionado bruto total, a preços correntes (R$ mil)`,
+        `Impostos, líquidos de subsídios, sobre produtos, a preços correntes (R$ mil)`,
+        `Produto Interno Bruto, a preços correntes (R$ mil)`,
+        `Produto Interno Bruto per capita, a preços correntes (R$)`,
+        `Atividade com maior valor adicionado bruto`
+    )
+
+```
+
+```{r}
+panel_data_indice
+# Filter the selected columns for years available in panel_data_indice
+years_panel <- unique(panel_data_indice$Year)
+selected_filtered <- selected_columns %>%
+    filter(Ano %in% years_panel)
+years_panel
+
+panel_data_indice$Year <- as.character(panel_data_indice$Year)
+# Ensure column names and data types are consistent before merging
+selected_filtered <- selected_filtered %>%
+    rename(
+        "Year" = 'Ano',
+        'NM_MUNICIPIO' = 'Nome do Município',
+        'SG_UF' = 'Sigla da Unidade da Federação',
+        "pib_per_capita" = `Produto Interno Bruto per capita, a preços correntes (R$)`,
+        "gdp" = `Produto Interno Bruto, a preços correntes (R$ mil)`
+    ) %>%
+    mutate(
+        Year = as.character(Year),
+        NM_MUNICIPIO = toupper(gsub("-", " ",iconv(as.character(NM_MUNICIPIO), from = "UTF-8", to = "ASCII//TRANSLIT"))),
+        SG_UF = as.character(SG_UF)
+    )
+selected_filtered
+
+# Merge the datasets by year, city name, and state to ensure cities with the same name are correctly paired
+merged_data <- panel_data_indice %>%
+    left_join(selected_filtered, by = c("Year", "NM_MUNICIPIO", 'SG_UF'))
+
+# Display the first few rows of the merged dataset
+colnames(merged_data)
+merged_data
+```
+
+# Regression First Test
+```{r}
+
+merged_data_MATOPIBA <- merged_data %>%
+    filter(SG_UF %in% c("MA", "TO", "PI", "BA"))
+
+merged_data_MATOPIBA
+
+matopiba_mun <- read_excel("MATOPIBA_2021.xls")
+matopiba_mun
+
+merged_data_MATOPIBA <- merged_data_MATOPIBA %>%
+    mutate(
+        "MATOPIBA" = ifelse(`Código do Município` %in% matopiba_mun$CD_MUN, 1, 0)
+    )
+merged_data_MATOPIBA
+```
+
+```{r}
+data_comparison <- merged_data_MATOPIBA %>%
+    mutate(`QT_VOTOS_NOMINAIS` = as.numeric(`QT_VOTOS_NOMINAIS`)) %>%
+    group_by(Year, MATOPIBA) %>%
+    summarise(average_centrao = mean(`QT_VOTOS_NOMINAIS`, na.rm = TRUE), .groups="drop") %>%
+    ungroup()
+
+data_comparison 
+
 ```
