@@ -4,7 +4,7 @@
 library(tidyverse)
 library(readr)
 library(readxl)
-
+library(janitor)
 panel_data_indice <- read_csv("panel_data_indice.csv")
 soja_municipios <- read_csv("soja_municipio.csv", skip = 1)
 pib_2002_2009 <- read_excel("PIB dos Municípios - base de dados 2002-2009.xls")
@@ -12,17 +12,11 @@ pib_2010_2021 <- read_excel('PIB dos Municípios - base de dados 2010-2021.xlsx'
 soja_nacional <- read_csv("soja_nacional.csv", skip=1)
 
 # Rename columns in pib_2002_2009 to match those in pib_2010_2021
-pib_2002_2009 <- pib_2002_2009 %>%
-    rename(
-        `Valor adicionado bruto da Agropecuária, a preços correntes (R$ mil)` = `Valor adicionado bruto da Agropecuária, \na preços correntes\n(R$ 1.000)`,
-        `Valor adicionado bruto da Indústria, a preços correntes (R$ mil)` = `Valor adicionado bruto da Indústria,\na preços correntes\n(R$ 1.000)`,
-        `Valor adicionado bruto dos Serviços, a preços correntes - exceto Administração, defesa, educação e saúde públicas e seguridade social (R$ mil)` = `Valor adicionado bruto dos Serviços,\na preços correntes \n- exceto Administração, defesa, educação e saúde públicas e seguridade social\n(R$ 1.000)`,
-        `Valor adicionado bruto da Administração, defesa, educação e saúde públicas e seguridade social, a preços correntes (R$ mil)` = `Valor adicionado bruto da Administração, defesa, educação e saúde públicas e seguridade social, \na preços correntes\n(R$ 1.000)`,
-        `Valor adicionado bruto total, a preços correntes (R$ mil)` = `Valor adicionado bruto total, \na preços correntes\n(R$ 1.000)`,
-        `Impostos, líquidos de subsídios, sobre produtos, a preços correntes (R$ mil)` = `Impostos, líquidos de subsídios, sobre produtos, \na preços correntes\n(R$ 1.000)`,
-        `Produto Interno Bruto, a preços correntes (R$ mil)` = `Produto Interno Bruto, \na preços correntes\n(R$ 1.000)`,
-        `Produto Interno Bruto per capita, a preços correntes (R$)` = `Produto Interno Bruto per capita, \na preços correntes\n(R$ 1,00)`
-    )
+pib_2002_2009 <- pib_2002_2009 %>% 
+  janitor::clean_names()
+
+pib_2010_2021 <- pib_2010_2021 %>% 
+  janitor::clean_names()
 
 # Combine PIB datasets
 pib_combined <- bind_rows(pib_2002_2009, pib_2010_2021)
@@ -33,63 +27,130 @@ head(pib_combined)
 # Select specific columns from the combined PIB dataset
 selected_columns <- pib_combined %>%
     select(
-        `Código da Microrregião`,
-        `Nome da Microrregião`,
-        Ano,
-        `Nome do Município`,
-        `Código do Município`,
-        `Sigla da Unidade da Federação`,
-        `Valor adicionado bruto da Agropecuária, a preços correntes (R$ mil)`,
-        `Valor adicionado bruto da Indústria, a preços correntes (R$ mil)`,
-        `Valor adicionado bruto dos Serviços, a preços correntes - exceto Administração, defesa, educação e saúde públicas e seguridade social (R$ mil)`,
-        `Valor adicionado bruto da Administração, defesa, educação e saúde públicas e seguridade social, a preços correntes (R$ mil)`,
-        `Valor adicionado bruto total, a preços correntes (R$ mil)`,
-        `Impostos, líquidos de subsídios, sobre produtos, a preços correntes (R$ mil)`,
-        `Produto Interno Bruto, a preços correntes (R$ mil)`,
-        `Produto Interno Bruto per capita, a preços correntes (R$)`,
-        `Atividade com maior valor adicionado bruto`
-    )
+        ano,
+        sigla_da_unidade_da_federacao,
+        codigo_do_municipio,
+        nome_do_municipio,
+        codigo_da_microrregiao,
+        nome_da_microrregiao,
+        semiarido,
+        valor_adicionado_bruto_da_agropecuaria_a_precos_correntes_r_1_000,
+        valor_adicionado_bruto_da_industria_a_precos_correntes_r_1_000,
+        valor_adicionado_bruto_dos_servicos_a_precos_correntes_exceto_administracao_defesa_educacao_e_saude_publicas_e_seguridade_social_r_1_000,
+        valor_adicionado_bruto_da_administracao_defesa_educacao_e_saude_publicas_e_seguridade_social_a_precos_correntes_r_1_000,
+        valor_adicionado_bruto_total_a_precos_correntes_r_1_000,
+        impostos_liquidos_de_subsidios_sobre_produtos_a_precos_correntes_r_1_000,
+        produto_interno_bruto_a_precos_correntes_r_1_000,
+        produto_interno_bruto_per_capita_a_precos_correntes_r_1_00
+    ) %>%
+  rename(
+    uf = sigla_da_unidade_da_federacao,
+    vab_agro = valor_adicionado_bruto_da_agropecuaria_a_precos_correntes_r_1_000,
+    vab_ind = valor_adicionado_bruto_da_industria_a_precos_correntes_r_1_000,
+    vab_serv = valor_adicionado_bruto_dos_servicos_a_precos_correntes_exceto_administracao_defesa_educacao_e_saude_publicas_e_seguridade_social_r_1_000,
+    vab_pub = valor_adicionado_bruto_da_administracao_defesa_educacao_e_saude_publicas_e_seguridade_social_a_precos_correntes_r_1_000,
+    vab_total = valor_adicionado_bruto_total_a_precos_correntes_r_1_000,
+    pib_per_capita = produto_interno_bruto_per_capita_a_precos_correntes_r_1_00,
+    pib = produto_interno_bruto_a_precos_correntes_r_1_000
+    
+  ) %>%
+  mutate(
+    ano = ifelse(ano == 2021, 2022, ano)
+  )
+selected_columns
 
 ```
 
 ```{r}
-panel_data_indice
+library(stringi)
 # Filter the selected columns for years available in panel_data_indice
 years_panel <- unique(panel_data_indice$Year)
 selected_filtered <- selected_columns %>%
-    filter(Ano %in% years_panel)
-years_panel
+    filter(ano %in% years_panel)
 
 panel_data_indice$Year <- as.character(panel_data_indice$Year)
 # Ensure column names and data types are consistent before merging
-selected_filtered <- selected_filtered %>%
+selected_filtered_normalized <- selected_filtered %>%
     rename(
-        "Year" = 'Ano',
-        'NM_MUNICIPIO' = 'Nome do Município',
-        'SG_UF' = 'Sigla da Unidade da Federação',
-        "pib_per_capita" = `Produto Interno Bruto per capita, a preços correntes (R$)`,
-        "gdp" = `Produto Interno Bruto, a preços correntes (R$ mil)`
+        "Year" = ano,
+        'NM_MUNICIPIO' = nome_do_municipio,
+        'SG_UF' = uf
     ) %>%
     mutate(
         Year = as.character(Year),
-        NM_MUNICIPIO = toupper(gsub("-", " ",iconv(as.character(NM_MUNICIPIO), from = "UTF-8", to = "ASCII//TRANSLIT"))),
+        NM_MUNICIPIO_norm = NM_MUNICIPIO %>%
+           stri_trans_general( "Latin-ASCII") %>%
+           str_replace_all("['\\-]", " ") %>%      # Remove hyphens and apostrophes
+           str_to_upper() %>%                     # Convert to uppercase
+           str_trim(),
         SG_UF = as.character(SG_UF)
     )
-selected_filtered
+panel_data_indice_normalized <- panel_data_indice %>%
+  mutate(NM_MUNICIPIO_norm = NM_MUNICIPIO %>%
+           stri_trans_general("Latin-ASCII") %>%
+           str_replace_all("['\\-]", " ") %>%      # Remove hyphens and apostrophes
+           str_to_upper() %>%                     # Convert to uppercase
+           str_trim())
 
-# Merge the datasets by year, city name, and state to ensure cities with the same name are correctly paired
-merged_data <- panel_data_indice %>%
-    left_join(selected_filtered, by = c("Year", "NM_MUNICIPIO", 'SG_UF'))
 
-# Display the first few rows of the merged dataset
-colnames(merged_data)
-merged_data
 ```
 
+```{r}
+library(dplyr)
+library(fuzzyjoin)
+library(stringdist)
+
+# For illustration, assume:
+# left_df   = panel_data_indice_normalized
+# right_df  = selected_filtered_normalized
+
+# Step 0: If not already unique, add an identifier to the left data
+left_df <- panel_data_indice_normalized %>% mutate(row_id = row_number())
+
+# ------------------------------
+# Step 1. Exact join on state, municipality, and year
+exact_matches <- left_df %>%
+  inner_join(
+    selected_filtered_normalized,
+    by = c("SG_UF", "NM_MUNICIPIO_norm", "Year")
+  )
+
+# ------------------------------
+# Step 2. For rows with no exact match, perform a fuzzy join on NM_MUNICIPIO
+# but require the same sg_uf and year.
+# First, identify left_df rows that did not match exactly:
+non_exact_left <- left_df %>%
+  anti_join(exact_matches, by = "row_id")
+
+# Now, use fuzzy_left_join on the non-matching rows.
+# Here we match exactly on sg_uf and year, and use a fuzzy match on NM_MUNICIPIO.
+# Adjust the threshold (here, < 0.1) as appropriate for your data.
+fuzzy_matches <- non_exact_left %>%
+  fuzzy_left_join(
+    selected_filtered_normalized,
+    by = c("SG_UF" = "SG_UF",
+           "Year"  = "Year",
+           "NM_MUNICIPIO_norm" = "NM_MUNICIPIO_norm"),
+    match_fun = list(`==`, `==`, function(x, y) stringdist(x, y, method = "jw") < 0.1)
+  ) %>%
+  filter(!is.na(pib))
+
+# ------------------------------
+# Step 3. Combine the exact and fuzzy matches.
+# Depending on your needs, you might want to prefer exact matches over fuzzy ones if both exist.
+final_join <- bind_rows(
+  exact_matches,
+  fuzzy_matches
+) 
+```
+
+```{r}
+exact_matches
+```
 # Regression First Test
 ```{r}
 
-merged_data_MATOPIBA <- merged_data %>%
+merged_data_MATOPIBA <- final_join %>%
     filter(SG_UF %in% c("MA", "TO", "PI", "BA"))
 
 merged_data_MATOPIBA
@@ -99,10 +160,17 @@ matopiba_mun
 
 merged_data_MATOPIBA <- merged_data_MATOPIBA %>%
     mutate(
-        "MATOPIBA" = ifelse(`Código do Município` %in% matopiba_mun$CD_MUN, 1, 0)
+        "MATOPIBA" = ifelse(`codigo_do_municipio` %in% matopiba_mun$CD_MUN, 1, 0)
     )
 merged_data_MATOPIBA
 ```
+
+
+```{r}
+merged_data_MATOPIBA %>%
+  filter(is.na(gdp))
+```
+
 
 ```{r}
 data_comparison <- merged_data_MATOPIBA %>%
