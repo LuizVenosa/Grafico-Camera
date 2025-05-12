@@ -1,316 +1,353 @@
 ,0
-0,"""Paulo Abi-Ackel"""
-1,"""Greyce Elias"""
-2,"""Gelson Azevedo"""
-3,"""Lincoln Portela"""
-4,"""Pedro Paulo"""
-5,"""Eduardo Barbosa"""
-6,"""Pinheirinho"""
-7,"""Reinhold Stephanes Junior"""
-8,"""Charles Fernandes"""
-9,"""Shéridan"""
-10,"""Acácio Favacho"""
-11,"""Benes Leocádio"""
-12,"""Vinicius Carvalho"""
-13,"""Átila Lins"""
-14,"""Jéssica Sales"""
-15,"""Daniel Trzeciak"""
-16,"""Alex Manente"""
-17,"""Afonso Hamm"""
-18,"""Emidinho Madeira"""
-19,"""Rose Modesto"""
-20,"""Sergio Toledo"""
-21,"""Luiz Nishimori"""
-22,"""Lauriete"""
-23,"""Wilson Santiago"""
-24,"""Junior Lourenço"""
-25,"""João Carlos Bacelar"""
-26,"""Marcelo Moraes"""
-27,"""Fábio Faria"""
-28,"""Vavá Martins"""
-29,"""Guilherme Mussi"""
-30,"""Dra. Vanda Milani"""
-31,"""Rrenato Queiroz"""
-32,"""Renata Abreu"""
-33,"""Diego Andrade"""
-34,"""Christino Aureo"""
-35,"""David Soares"""
-36,"""Hercílio Coelho Diniz"""
-37,"""Samuel Moreira"""
-38,"""Jhonatan de Jesus"""
-39,"""Professora Dorinha Seabra Rezende"""
-40,"""Júnior Mano"""
-41,"""Zé Vitor"""
-42,"""Luiz Lauro Filho"""
-43,"""Nilson F. Stainsack"""
-44,"""Lafayette de Andrada"""
-45,"""Flordelis"""
-46,"""Carlos Gomes"""
-47,"""Capitão Fábio Abreu"""
-48,"""Dr. João"""
-49,"""Ricardo Guidi"""
-50,"""Júlio Cesar"""
-51,"""Ricardo Barros"""
-52,"""Herculano Passos"""
-53,"""Alexandre Serfiotis"""
-54,"""Giacobo"""
-55,"""José Priante"""
-56,"""Tadeu Filippelli"""
-57,"""Dr. Zacharias Calil"""
-58,"""Carla Dickson"""
-59,"""Joaquim Passarinho"""
-60,"""Roman"""
-61,"""Paes Landim"""
-62,"""Paulo Bengtson"""
-63,"""Wellington Roberto"""
-64,"""Darcísio Perondi"""
-65,"""Rosangela Gomes"""
-66,"""Marco Bertaiolli"""
-67,"""Marcelo Ramos"""
-68,"""Antonio Brito"""
-69,"""Vinicius Gurgel"""
-70,"""Elcione Barbalho"""
-71,"""Flávia Arruda"""
-72,"""Genecias Noronha"""
-73,"""Fausto Pinato"""
-74,"""Rubens Bueno"""
-75,"""Da Vitória"""
-76,"""Carmen Zanotto"""
-77,"""Schiavinato"""
-78,"""Domingos Sávio"""
-79,"""Gorete Pereira"""
-80,"""Roberto de Lucena"""
-81,"""Leandre"""
-82,"""Marx Beltrão"""
-83,"""Marina Santos"""
-84,"""Soraya Santos"""
-85,"""Igor Timo"""
-86,"""Aline Gurgel"""
-87,"""Léo Moraes"""
-88,"""Juscelino Filho"""
-89,"""José Rocha"""
-90,"""Gilberto Nascimento"""
-91,"""Euclydes Pettersen"""
-92,"""Roberto Alves"""
-93,"""Giovani Cherini"""
-94,"""Aroldo Martins"""
-95,"""Lucas Redecker"""
-96,"""Pastor Gil"""
-97,"""Fernando Coelho Filho"""
-98,"""Aureo Ribeiro"""
-99,"""Miguel Lombardi"""
-100,"""João Marcelo Souza"""
-101,"""Sóstenes Cavalcante"""
-102,"""Mário Negromonte Jr."""
-103,"""Onyx Lorenzoni"""
-104,"""Mara Rocha"""
-105,"""Luiz Antônio Corrêa"""
-106,"""Norma Ayub"""
-107,"""Uldurico Junior"""
-108,"""Josimar Maranhãozinho"""
-109,"""Giovani Feltes"""
-110,"""Silvio Costa Filho"""
-111,"""Alceu Moreira"""
-112,"""Efraim Filho"""
-113,"""Hermes Parcianello"""
-114,"""Patricia Ferraz"""
-115,"""Hélio Costa"""
-116,"""Carlos Chiodini"""
-117,"""Fábio Trad"""
-118,"""Fernando Monteiro"""
-119,"""Vinicius Farah"""
-120,"""Ronaldo Carletto"""
-121,"""Edio Lopes"""
-122,"""Hélio Leite"""
-123,"""Baleia Rossi"""
-124,"""Leur Lomanto Júnior"""
-125,"""Vermelho"""
-126,"""Luis Tibé"""
-127,"""Fábio Mitidieri"""
-128,"""Cacá Leão"""
-129,"""Moses Rodrigues"""
-130,"""Domingos Neto"""
-131,"""Marcelo Calero"""
-132,"""Luizão Goulart"""
-133,"""Jorge Goetten"""
-134,"""André de Paula"""
-135,"""Celso Maldaner"""
-136,"""Márcio Marinho"""
-137,"""Dr. Sinval Malheiros"""
-138,"""Sebastião Oliveira"""
-139,"""Danilo Forte"""
-140,"""Jorge Braz"""
-141,"""Fábio Ramalho"""
-142,"""Raul Henry"""
-143,"""Christiane de Souza Yared"""
-144,"""Juninho do Pneu"""
-145,"""Mariana Carvalho"""
-146,"""Flávio Nogueira"""
-147,"""AJ Albuquerque"""
-148,"""Adolfo Viana"""
-149,"""Isnaldo Bulhões Jr."""
-150,"""Rodrigo de Castro"""
-151,"""Pedro Lucas Fernandes"""
-152,"""Marcão Gomes"""
-153,"""Magda Mofatto"""
-154,"""Hugo Leal"""
-155,"""Célio Silveira"""
-156,"""Arnaldo Jardim"""
-157,"""Bia Cavassa"""
-158,"""Eduardo Costa"""
-159,"""Capitão Augusto"""
-160,"""Luiz Antonio Corrêa"""
-161,"""Expedito Netto"""
-162,"""Deuzinho Filho"""
-163,"""Franco Cartafina"""
-164,"""Bosco Saraiva"""
-165,"""João Maia"""
-166,"""Ney Leprevost"""
-167,"""Sergio Souza"""
-168,"""Igor Kannário"""
-169,"""Beto Pereira"""
-170,"""Márcio Biolchi"""
-171,"""José Nelto"""
-172,"""Ronaldo Martins"""
-173,"""Emanuel Pinheiro Neto"""
-174,"""Alexandre Leite"""
-175,"""Vitor Lippi"""
-176,"""Hiran Gonçalves"""
-177,"""Da Vitoria"""
-178,"""Nivaldo Albuquerque"""
-179,"""Danrlei de Deus Hinterholz"""
-180,"""Raimundo Costa"""
-181,"""Laercio Oliveira"""
-182,"""Dr. Gonçalo"""
-183,"""Paulinho da Força"""
-184,"""Vicentinho Júnior"""
-185,"""Toninho Wandscheer"""
-186,"""Ricardo Izar"""
-187,"""Boca Aberta"""
-188,"""Maurício Dziedricki"""
-189,"""Carlos Bezerra"""
-190,"""Marcio Alvino"""
-191,"""Paulo Marinho Jr"""
-192,"""Marcelo Aro"""
-193,"""João Campos"""
-194,"""Aécio Neves"""
-195,"""Zé Silva"""
-196,"""Clarissa Garotinho"""
-197,"""Reinhold Stephanes"""
-198,"""Misael Varella"""
-199,"""Edna Henrique"""
-200,"""Pedro Westphalen"""
-201,"""Hildo Rocha"""
-202,"""Severino Pessoa"""
-203,"""Juarez Costa"""
-204,"""Angela Amin"""
-205,"""Daniela do Waguinho"""
-206,"""Amaro Neto"""
-207,"""Julio Cesar Ribeiro"""
-208,"""Luisa Canziani"""
-209,"""João Roma"""
-210,"""Marcos Aurélio Sampaio"""
-211,"""Osires Damaso"""
-212,"""Eduardo da Fonte"""
-213,"""Paulo Azi"""
-214,"""Beto Rosado"""
-215,"""Eduardo Cury"""
-216,"""Marlon Santos"""
-217,"""Valtenir Pereira"""
-218,"""Professor Alcides"""
-219,"""Milton Vieira"""
-220,"""André Fufuca"""
-221,"""Pedro Augusto Bezerra"""
-222,"""Tereza Nelma"""
-223,"""Dimas Fabiano"""
-224,"""Aguinaldo Ribeiro"""
-225,"""Marreca Filho"""
-226,"""Átila Lira"""
-227,"""Ruy Carneiro"""
-228,"""Edilázio Júnior"""
-229,"""Luis Miranda"""
-230,"""Jaqueline Cassol"""
-231,"""Arthur Lira"""
-232,"""José Nunes"""
-233,"""Tiago Dimas"""
-234,"""Gilberto Abramo"""
-235,"""Haroldo Cathedral"""
-236,"""Glaustin da Fokus"""
-237,"""Doutor Luizinho"""
-238,"""Alex Santana"""
-239,"""Gutemberg Reis"""
-240,"""Alexandre Frota"""
-241,"""Hugo Motta"""
-242,"""Aníbal Gomes"""
-243,"""Ricardo Teobaldo"""
-244,"""Elmar Nascimento"""
-245,"""Bilac Pinto"""
-246,"""Chiquinho Brazão"""
-247,"""Wladimir Garotinho"""
-248,"""Santini"""
-249,"""Geninho Zuliani"""
-250,"""André Ferreira"""
-251,"""Adriano do Baldy"""
-252,"""Iracema Portella"""
-253,"""Cristiano Vale"""
-254,"""Eli Borges"""
-255,"""Pedro Cunha Lima"""
-256,"""Vaidon Oliveira"""
-257,"""Paulo Magalhães"""
-258,"""Abílio Santana"""
-259,"""Gastão Vieira"""
-260,"""Sérgio Brito"""
-261,"""Leda Sadala"""
-262,"""Bosco Costa"""
-263,"""Augusto Coutinho"""
-264,"""Celina Leão"""
-265,"""Eli Corrêa Filho"""
-266,"""Lucio Mosquini"""
-267,"""Capitão Wagner"""
-268,"""Fernando Rodolfo"""
-269,"""Luiz Carlos Motta"""
-270,"""Arthur Oliveira Maia"""
-271,"""Sidney Leite"""
-272,"""Darci de Matos"""
-273,"""Rodrigo Maia"""
-274,"""Mauro Lopes"""
-275,"""Vanderlei Macris"""
-276,"""Daniel Coelho"""
-277,"""Newton Cardoso Jr"""
-278,"""Carlos Henrique Gaguim"""
-279,"""Fred Costa"""
-280,"""Gil Cutrim"""
-281,"""Alcides Rodrigues"""
-282,"""Manuel Marcos"""
-283,"""Fabiano Tolentino"""
-284,"""Bruna Furlan"""
-285,"""Marcos Pereira"""
-286,"""Neri Geller"""
-287,"""Carlos Sampaio"""
-288,"""Flaviano Melo"""
-289,"""Altineu Côrtes"""
-290,"""Fabio Reis"""
-291,"""Otto Alencar Filho"""
-292,"""Olival Marques"""
-293,"""Roberto Pessoa"""
-294,"""Silas Câmara"""
-295,"""Luiz Carlos"""
-296,"""Cezinha de Madureira"""
-297,"""Cleber Verde"""
-298,"""Nilson Pinto"""
-299,"""Ottaci Nascimento"""
-300,"""Ossesio Silva"""
-301,"""Jerônimo Goergen"""
-302,"""Dr. Agripino Magalhães"""
-303,"""Margarete Coelho"""
-304,"""Alan Rick"""
-305,"""Dr. Leonardo"""
-306,"""Walter Alves"""
-307,"""Stefano Aguiar"""
-308,"""Enrico Misasi"""
-309,"""Francisco Jr."""
-310,"""Dulce Miranda"""
-311,"""Jose Mario Schreiner"""
-312,"""Maria Rosas"""
-313,"""Gustinho Ribeiro"""
-314,"""André Abdon"""
+0,Guilherme Mussi
+1,Hildo Rocha
+2,Euclydes Pettersen
+3,Professor Alcides
+4,Isnaldo Bulhões Jr.
+5,Afonso Hamm
+6,Rafafá
+7,Arthur Lira
+8,Severino Pessoa
+9,Antônia Lúcia
+10,Fabio Reis
+11,Alan Rick
+12,Wilson Santiago
+13,Gilberto Abramo
+14,Rodrigo de Castro
+15,Arnaldo Jardim
+16,André Abdon
+17,Carlos Chiodini
+18,Lucio Mosquini
+19,Danilo Forte
+20,Samuel Moreira
+21,Giovani Cherini
+22,Tia Eron
+23,RRenato Queiroz
+24,Lafayette de Andrada
+25,Marcão Gomes
+26,Ottaci Nascimento
+27,Hélio Costa
+28,Cacá Leão
+29,Soraya Santos
+30,Silvio Costa Filho
+31,Fernando Rodolfo
+32,Gil Cutrim
+33,Marcelo Moraes
+34,André de Paula
+35,Angela Amin
+36,Ely Santos
+37,Raul Henry
+38,Sidney Leite
+39,Maurício Dziedricki
+40,Clarissa Garotinho
+41,Daniel Trzeciak
+42,Newton Cardoso Jr
+43,Eduardo Costa
+44,Genecias Noronha
+45,Capitão Fábio Abreu
+46,Jéssica Sales
+47,Alceu Moreira
+48,Gastão Vieira
+49,Alexandre Figueiredo
+50,Léo Moraes
+51,Cleber Verde
+52,Hugo Motta
+53,Edna Henrique
+54,Roberto Pessoa
+55,Luiz Lauro Filho
+56,Raimundo Costa
+57,Ricardo Izar
+58,Juninho do Pneu
+59,Josivaldo JP
+60,Jhonatan de Jesus
+61,Paulo Azi
+62,Roberto de Lucena
+63,Aureo Ribeiro
+64,Gelson Azevedo
+65,Flordelis
+66,Eliza Virgínia
+67,João Campos
+68,João Roma
+69,AJ Albuquerque
+70,João Maia
+71,Haroldo Cathedral
+72,Juscelino Filho
+73,Wellington Roberto
+74,Alcides Rodrigues
+75,Gorete Pereira
+76,Alexandre Leite
+77,Glaustin da Fokus
+78,Celina Leão
+79,Antonio Brito
+80,Mara Rocha
+81,Victor Mendes
+82,Amaro Neto
+83,Márcio Marinho
+84,Emanuel Pinheiro Neto
+85,Vaidon Oliveira
+86,Luisa Canziani
+87,Covatti Filho
+88,Marina Santos
+89,Da Vitória
+90,Dr. Zacharias Calil
+91,Marcos Aurélio Sampaio
+92,Mariana Carvalho
+93,Jaqueline Cassol
+94,Sandro Alex
+95,Pinheirinho
+96,Renata Abreu
+97,Daniel Coelho
+98,Jones Moura
+99,Leonardo Gadelha
+100,Vinicius Carvalho
+101,Paes Landim
+102,Átila Lins
+103,Toninho Wandscheer
+104,Santini
+105,Zé Augusto Nalin
+106,Tereza Cristina
+107,Aníbal Gomes
+108,Roberto Alves
+109,Leda Sadala
+110,Zé Silva
+111,Aelton Freitas
+112,José Priante
+113,Marcelo Calero
+114,Abílio Santana
+115,Emidinho Madeira
+116,Boca Aberta
+117,Jorge Braz
+118,Pedro Augusto Palareti
+119,Zé Vitor
+120,Eduardo Cury
+121,Efraim Filho
+122,Carmen Zanotto
+123,Neucimar Fraga
+124,Francisco Jr.
+125,Gutemberg Reis
+126,Alex Manente
+127,Carlos Henrique Gaguim
+128,Totonho Lopes
+129,Jorge Goetten
+130,Laerte Bessa
+131,Hiran Gonçalves
+132,Misael Varella
+133,Claudio Cajado
+134,Manuel Marcos
+135,Pedro Paulo
+136,Bia Cavassa
+137,Luiz Antônio Corrêa
+138,Julio Lopes
+139,Flávia Arruda
+140,Lázaro Botelho
+141,Osmar Serraglio
+142,Lucas Redecker
+143,Celso Maldaner
+144,Hercílio Coelho Diniz
+145,Edilázio Júnior
+146,Marcelo Squassoni
+147,Edio Lopes
+148,Márcio Macêdo
+149,Milton Vieira
+150,Nivaldo Albuquerque
+151,Augusto Coutinho
+152,Fernando Coelho Filho
+153,Ricardo Barros
+154,Nilson Pinto
+155,Lucas Follador
+156,Eduardo da Fonte
+157,Domingos Sávio
+158,Dr. Sinval Malheiros
+159,Sergio Toledo
+160,Pedro Lucas Fernandes
+161,Sargento Alexandre
+162,Eli Corrêa Filho
+163,Sergio Souza
+164,Iracema Portella
+165,Fábio Ramalho
+166,Marco Brasil
+167,Fabiano Tolentino
+168,Junior Lourenço
+169,Moses Rodrigues
+170,Márcio Biolchi
+171,Capitão Wagner
+172,Carlos Sampaio
+173,Celso Sabino
+174,Carlos Bezerra
+175,Igor Kannário
+176,Vanderlei Macris
+177,Greyce Elias
+178,Luiz Antonio Corrêa
+179,Marcio Alvino
+180,Patricia Ferraz
+181,Walter Alves
+182,Leonardo Picciani
+183,Marco Bertaiolli
+184,Lauriete
+185,José Rocha
+186,Júnior Mano
+187,Vitor Lippi
+188,Aline Gurgel
+189,Chiquinho Brazão
+190,Aluisio Mendes
+191,Expedito Netto
+192,Cristiano Vale
+193,Jefferson Campos
+194,Tiago Dimas
+195,Geninho Zuliani
+196,Julio Cesar Ribeiro
+197,Luiz Carlos
+198,Marcos Pereira
+199,Hélio Leite
+200,Aguinaldo Ribeiro
+201,Arthur Oliveira Maia
+202,Bosco Saraiva
+203,Domingos Neto
+204,Vermelho
+205,Beto Rosado
+206,Jose Mario Schreiner
+207,Giacobo
+208,Luis Miranda
+209,Schiavinato
+210,Professora Dorinha Seabra Rezende
+211,Lucas Vergilio
+212,Paulo Bengtson
+213,Fábio Trad
+214,Fernando Borja
+215,Bosco Costa
+216,Rodrigo Maia
+217,Paulo Vicente Caleffi
+218,Pedro Cunha Lima
+219,Acácio Favacho
+220,Flaviano Melo
+221,Giovani Feltes
+222,Valdevan Noventa
+223,Ney Leprevost
+224,Laercio Oliveira
+225,Dr. Agripino Magalhães
+226,Dr. Gonçalo
+227,Dra. Vanda Milani
+228,Doutor Luizinho
+229,Aécio Neves
+230,Da Vitoria
+231,Benes Leocádio
+232,Patrick Dorneles
+233,Mário Negromonte Jr.
+234,Josimar Maranhãozinho
+235,Carlos Gomes
+236,Altineu Côrtes
+237,Vinicius Farah
+238,Marcelo Ramos
+239,Luiz Carlos Motta
+240,Norma Pereira
+241,Eli Borges
+242,Dr. João
+243,Igor Timo
+244,Rosangela Gomes
+245,Margarete Coelho
+246,Júnior Ferrari
+247,Otto Alencar Filho
+248,Pedro Vilela
+249,Marlon Santos
+250,Rrenato Queiroz
+251,Olival Marques
+252,Célio Silveira
+253,Deuzinho Filho
+254,Nilson F. Stainsack
+255,Vicentinho Júnior
+256,Wladimir Garotinho
+257,Darcísio Perondi
+258,Rubens Bueno
+259,Neri Geller
+260,Jerônimo Goergen
+261,Dimas Fabiano
+262,Joceval Rodrigues
+263,Uldurico Junior
+264,Charles Fernandes
+265,Hugo Leal
+266,Cezinha de Madureira
+267,Flávio Nogueira
+268,Fábio Mitidieri
+269,Daniela do Waguinho
+270,Ossesio Silva
+271,Paulo Abi-Ackel
+272,Enrico Misasi
+273,Fernando Monteiro
+274,Otavio Leite
+275,Paulo Marinho Jr
+276,Átila Lira
+277,Paulinho da Força
+278,Hermes Parcianello
+279,Alex Santana
+280,Elmar Nascimento
+281,Luis Tibé
+282,Reinhold Stephanes
+283,Sérgio Brito
+284,Ricardo Teobaldo
+285,Eleuses Paiva
+286,Tereza Nelma
+287,João Carlos Bacelar
+288,Ronaldo Carletto
+289,Reinhold Stephanes Junior
+290,João Marcelo Souza
+291,Norma Ayub
+292,Vavá Martins
+293,Tito
+294,José Nunes
+295,Pedro Dalua
+296,André Fufuca
+297,Alexandre Serfiotis
+298,Diego Andrade
+299,Marreca Filho
+300,Leur Lomanto Júnior
+301,Gustinho Ribeiro
+302,Christino Aureo
+303,Rossoni
+304,Milton Coelho
+305,Ronaldo Martins
+306,José Nelto
+307,Juarez Costa
+308,Leandre
+309,Marcos Soares
+310,Ricardo da Karol
+311,Silas Câmara
+312,Osires Damaso
+313,Christiane de Souza Yared
+314,Fábio Faria
+315,Júlio Cesar
+316,Vinicius Gurgel
+317,Rose Modesto
+318,Dulce Miranda
+319,Shéridan
+320,Elcione Barbalho
+321,Fausto Pinato
+322,Marx Beltrão
+323,Baleia Rossi
+324,Eduardo Barbosa
+325,Herculano Passos
+326,Marcelo Aro
+327,Roman
+328,Ruy Carneiro
+329,Adolfo Viana
+330,Alexandre Frota
+331,Bilac Pinto
+332,Paulo Magalhães
+333,Fred Costa
+334,Dr. Leonardo
+335,Adriano do Baldy
+336,Beto Pereira
+337,Pedro Augusto Bezerra
+338,Carla Dickson
+339,Tiago Andrino
+340,Sebastião Oliveira
+341,Franco Cartafina
+342,Aroldo Martins
+343,Odorico Monteiro
+344,Bruna Furlan
+345,Tadeu Filippelli
+346,Luizão Goulart
+347,Henrique do Paraíso
+348,Mauro Lopes
+349,David Soares
+350,Maria Rosas
+351,Darci de Matos

@@ -145,7 +145,7 @@ final_join <- bind_rows(
 ```
 
 ```{r}
-exact_matches
+write.csv(final_join, "./novo_dado_estudo.csv")
 ```
 # Regression First Test
 ```{r}
