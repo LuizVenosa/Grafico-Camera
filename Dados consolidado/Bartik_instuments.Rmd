@@ -6,10 +6,10 @@ library(readr)
 library(readxl)
 library(janitor)
 panel_data_indice <- read_csv("panel_data_indice.csv")
-soja_municipios <- read_csv("soja_municipio.csv", skip = 1)
+soja_municipios <- read_csv("dados agricolas/producao_valor_total_muni.csv", skip = 1)
 pib_2002_2009 <- read_excel("PIB dos Municípios - base de dados 2002-2009.xls")
 pib_2010_2021 <- read_excel('PIB dos Municípios - base de dados 2010-2021.xlsx')
-soja_nacional <- read_csv("soja_nacional.csv", skip=1)
+soja_nacional <- read_csv("dados agricolas/producao_valor_total_br.csv", skip=1)
 
 # Rename columns in pib_2002_2009 to match those in pib_2010_2021
 pib_2002_2009 <- pib_2002_2009 %>% 
@@ -145,7 +145,11 @@ final_join <- bind_rows(
 ```
 
 ```{r}
-write.csv(final_join, "./novo_dado_estudo.csv")
+final_join <- final_join %>%
+  rename(index_centrao = QT_VOTOS_NOMINAIS) %>%   # if your column is QT_VOTOS_NOMINAIS, change here
+  mutate(index_centrao = round(index_centrao, 3))
+
+write.csv(final_join, "./dados_base_estudo.csv")
 ```
 # Regression First Test
 ```{r}
@@ -166,19 +170,1018 @@ merged_data_MATOPIBA
 ```
 
 
-```{r}
-merged_data_MATOPIBA %>%
-  filter(is.na(gdp))
-```
-
 
 ```{r}
 data_comparison <- merged_data_MATOPIBA %>%
-    mutate(`QT_VOTOS_NOMINAIS` = as.numeric(`QT_VOTOS_NOMINAIS`)) %>%
+    mutate(`index_centrao` = as.numeric(`index_centrao`)) %>%
     group_by(Year, MATOPIBA) %>%
-    summarise(average_centrao = mean(`QT_VOTOS_NOMINAIS`, na.rm = TRUE), .groups="drop") %>%
+    summarise(average_centrao = mean(`index_centrao`, na.rm = TRUE)) %>%
     ungroup()
 
 data_comparison 
 
 ```
+
+```{r}
+
+library(tidyverse)
+library(AER)
+
+# Load base data, dropping the index column and converting Year to integer
+dados_base_estudo <- readr::read_csv("dados_base_estudo.csv", show_col_types = FALSE) |>
+  select(-`...1`) |>
+  mutate(Year = as.integer(Year))
+
+# Load municipal production data (skip the title row, use ';' delimiter, comma decimals)
+producao_muni <- readr::read_delim(
+  "dados agricolas/producao_valor_total_muni.csv",
+  delim = ";",
+  skip = 1,                       # skip the "Valor da produção - total" line
+  locale = locale(decimal_mark = ","),
+  show_col_types = FALSE
+) |>
+  rename(
+    SG_UF = Sigla,
+    codigo_do_municipio = `Código`,
+    municipio = `Município`
+  ) |>
+  pivot_longer(
+    cols = matches("^\\d{4}$"),   # year columns like 1990, 1991...
+    names_to = "Year",
+    values_to = "producao_valor_total_bruto"
+  ) |>
+  mutate(
+    Year = as.integer(Year),
+    codigo_do_municipio = as.integer(codigo_do_municipio)
+  )
+
+# Load national (Brazil) production data, skip title row
+producao_br <- readr::read_delim(
+  "dados agricolas/producao_valor_total_br.csv",
+  delim = ",",
+  skip = 1,
+  show_col_types = FALSE
+) |>
+  rename(
+    SG_UF = Sigla,
+    codigo_pais = `Código`,
+    pais = Brasil
+  ) |>
+  pivot_longer(
+    cols = matches("^\\d{4}$"),
+    names_to = "Year",
+    values_to = "shock"
+  ) |>
+  mutate(Year = as.integer(Year))
+
+# Choose a baseline year for shares (e.g., 2002)
+baseline_year <- 2000
+total_baseline <- producao_muni |>
+  filter(Year == baseline_year) |>
+  summarise(total = sum(producao_valor_total_bruto, na.rm = TRUE)) |>
+  pull(total)
+
+shares <- producao_muni |>
+  filter(Year == baseline_year) |>
+  mutate(share = producao_valor_total_bruto / total_baseline) |>
+  select(codigo_do_municipio, share)
+
+# Construct the shift-share instrument by combining the baseline shares and national shocks
+instrument <- shares |>
+  tidyr::crossing(producao_br) |>
+  transmute(
+    codigo_do_municipio,
+    Year,
+    shift_share_iv = share * shock
+  )
+
+# Merge everything together on municipality code and year
+dados_iv <- dados_base_estudo |>
+  left_join(producao_muni, by = c("codigo_do_municipio", "Year")) |>
+  left_join(instrument,  by = c("codigo_do_municipio", "Year"))
+
+
+dados_iv <- dados_iv %>%
+        mutate(producao_milhoes = producao_valor_total_bruto / 1e6,
+        index_centrao_pct = index_centrao * 100,
+        shift_share_iv = shift_share_iv / 1e6)  
+  
+
+
+```
+
+
+
+```{r}
+
+# Run IV regression: instrumenting municipal production with the shift-share instrument
+iv_model <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes | shift_share_iv,
+  data = dados_iv
+)
+
+# View results
+summary(iv_model)
+```
+
+
+```{r}
+library(tidyverse)
+
+# --- Population estimates (populacao.csv) ---
+populacao <- readr::read_csv("populacao.csv", skip = 1, show_col_types = FALSE) %>%
+  select(-starts_with("Unnamed")) %>%                    # drop the blank column
+  rename(
+    SG_UF = Sigla,
+    codigo_do_municipio = `Código`,
+    municipio = `Município`
+  ) %>%
+  pivot_longer(
+    cols = -c(SG_UF, codigo_do_municipio, municipio),
+    names_to = "Year",
+    values_to = "populacao"
+  ) %>%
+  mutate(
+    Year = as.numeric(Year),
+    codigo_do_municipio = as.numeric(codigo_do_municipio)
+  )
+
+# --- Census population (populacao_censo.csv) ---
+populacao_censo <- readr::read_csv("populacao_censo.csv", skip = 1, show_col_types = FALSE) %>%
+  select(-starts_with("Unnamed")) %>%
+  rename(
+    SG_UF = Sigla,
+    codigo_do_municipio = `Código`,
+    municipio = `Município`
+  ) %>%
+  pivot_longer(
+    cols = -c(SG_UF, codigo_do_municipio, municipio),
+    names_to = "Year",
+    values_to = "populacao_censo"
+  ) %>%
+  mutate(
+    Year = as.numeric(Year),
+    codigo_do_municipio = as.numeric(codigo_do_municipio)
+  )
+
+# --- Analfabetismo rates (regressPanel_dados.csv) ---
+analfabetismo <- readr::read_csv("regressPanel_dados.csv", show_col_types = FALSE) %>%
+  rename(
+    codigo_do_municipio = ibge,
+    taxa_analfabetismo = taxa_analfabetismo
+  ) %>%
+  mutate(
+    codigo_do_municipio = as.numeric(codigo_do_municipio),
+    Year = as.numeric(Year)
+  ) %>%
+  select(codigo_do_municipio, Year, taxa_analfabetismo)
+
+# --- Combine the datasets with your panel (assumes you have a data frame `dados_iv` or similar) ---
+dados_iv <- dados_iv %>%
+  left_join(populacao,      by = c("codigo_do_municipio", "Year")) %>%
+  left_join(populacao_censo, by = c("codigo_do_municipio", "Year")) %>%
+  left_join(analfabetismo,  by = c("codigo_do_municipio", "Year"))
+
+# Now `dados_iv` contains the additional variables:
+# - `populacao`   : intercensal population estimates (various years)
+# - `populacao_censo` : census population counts (2007, 2010, 2022)
+# - `taxa_analfabetismo` : illiteracy rate from regressPanel_dados.csv
+
+
+write.csv(dados_iv, "./dados_iv.csv")
+
+```
+
+
+```{r}
+# Load required packages
+library(tidyverse)
+
+
+# 2. Convert keys to numeric so we can group, and drop duplicates by summarising.
+dados_iv_clean <- dados_iv %>%
+  mutate(
+    codigo_do_municipio = as.numeric(codigo_do_municipio),
+    Year = as.integer(Year),
+    shift_share_iv = as.numeric(shift_share_iv)     # ensure numeric
+  ) %>%
+  group_by(codigo_do_municipio, Year) %>%
+  summarise(
+    index_centrao      = first(index_centrao),
+    populacao          = first(populacao),
+    taxa_analfabetismo = first(taxa_analfabetismo),
+    vab_pub            = first(vab_pub),
+    vab_total          = first(vab_total),
+    shift_share_iv     = first(shift_share_iv),
+    .groups = "drop"
+  )
+
+# 3. Create share_of_public_GDP as the share of vab_pub in vab_total.
+dados_iv_clean <- dados_iv_clean %>%
+  mutate(
+    share_of_public_GDP = vab_pub / vab_total
+  )
+
+```
+
+
+
+```{r}
+# 4. Run bivariate regressions of index on each variable.
+model_pop   <- lm(index_centrao ~ populacao, data = dados_iv_clean)
+model_taxa  <- lm(index_centrao ~ taxa_analfabetismo, data = dados_iv_clean)
+model_share <- lm(index_centrao ~ share_of_public_GDP, data = dados_iv_clean)
+
+# Print summaries
+summary(model_pop)
+summary(model_taxa)
+summary(model_share)
+```
+
+```{r}
+# 5. Test instrument balance: regress the shift-share IV on each covariate.
+inst_pop   <- lm(shift_share_iv ~ populacao, data = dados_iv_clean)
+inst_taxa  <- lm(shift_share_iv ~ taxa_analfabetismo, data = dados_iv_clean)
+inst_share <- lm(shift_share_iv ~ share_of_public_GDP, data = dados_iv_clean)
+
+# Print summaries of instrument regressions
+summary(inst_pop)
+summary(inst_taxa)
+summary(inst_share)
+```
+
+
+```{r}
+library(tidyverse)
+library(plm)
+library(AER)       # for iv diagnostics
+library(lmtest)    # for coeftest
+library(sandwich)  # for
+
+# === 1. Read and clean the data ===
+
+# Read the raw data
+dados_iv <- readr::read_csv("dados_iv.csv", show_col_types = FALSE)
+
+# Drop columns that contain only NAs and extraneous index columns
+dados_iv_clean <- dados_iv %>%
+  select(where(~ !all(is.na(.)))) %>%
+  select(-matches("^\\.\\.\\..*")) %>%            # remove columns like ...1
+  mutate(
+    codigo_do_municipio = as.numeric(codigo_do_municipio),
+    Year = as.integer(Year)
+  )
+
+# === 2. Deduplicate and summarise municipality–year observations ===
+
+# Collapse duplicates by taking the first value for most variables and averaging
+# `taxa_analfabetismo` and `populacao` if duplicates exist.
+dados_panel <- dados_iv_clean %>%
+  group_by(codigo_do_municipio, Year) %>%
+  summarise(
+    UF = first(SG_UF.x),
+    index_centrao        = first(index_centrao),
+    producao_valor_total_bruto = first(producao_valor_total_bruto),
+    populacao            = mean(populacao, na.rm = TRUE),
+    taxa_analfabetismo   = mean(taxa_analfabetismo, na.rm = TRUE),
+    vab_pub              = first(vab_pub),
+    vab_total            = first(vab_total),
+    vab_agro             = first(vab_agro),
+    vab_ind             = first(vab_ind),
+    vab_serv             = first(vab_serv),
+    shift_share_iv       = first(shift_share_iv),
+    pib_per_capita       = first(pib_per_capita),
+    .groups = "drop"
+  ) %>%
+  # Create the share of public GDP
+  mutate(# compute shares of each sector in total GDP
+    share_GDP_agro = vab_agro / vab_total,
+    share_GDP_ind  = vab_ind  / vab_total,
+    share_GDP_serv = vab_serv / vab_total,
+    share_GDP_pub  = vab_pub  / vab_total,
+    share_GDP_other = 1 - (share_GDP_agro + share_GDP_ind + share_GDP_serv + share_GDP_pub),
+    
+    # Herfindahl–Hirschman index: sum of squared shares
+    hhi_sectors = share_GDP_agro^2 + share_GDP_ind^2 + 
+                  share_GDP_serv^2 + share_GDP_pub^2 + share_GDP_other^2,
+    
+    # Alternatively, a diversification index scaled between 0 and 1:
+    diversification_index = 1 - hhi_sectors)
+
+# === 3. Rescale variables for interpretability ===
+
+dados_panel <- dados_panel %>%
+  mutate(
+    producao_milhoes       = producao_valor_total_bruto / 1e6,
+    shift_share_iv_milhoes = shift_share_iv / 1e6,
+    index_centrao_pct      = index_centrao * 100,
+    ln_pop = log(populacao)
+  )
+
+
+```
+
+```{r}
+# === 4. Two-way fixed-effects model (no instrument) ===
+
+fe_model <- plm::plm(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + share_GDP_pub + diversification_index + pib_per_capita + share_GDP_ind,
+  data  = dados_panel,
+  index = c("codigo_do_municipio", "Year"),
+  model = "within",
+  effect = "twoways"
+)
+summary(fe_model)
+```
+
+
+```{r}
+# === 5. Two-way fixed-effects IV model ===
+# Instrument producao_milhoes with the rescaled shift-share instrument.
+fe_iv_model <- plm::plm(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + diversification_index + pib_per_capita |
+                      shift_share_iv_milhoes + ln_pop + taxa_analfabetismo + diversification_index + pib_per_capita,
+  data  = dados_panel,
+  index = c("codigo_do_municipio", "Year"),
+  model = "within",
+  effect = "twoways"
+)
+summary(fe_iv_model)
+```
+
+
+
+```{r}
+# === 6. Cluster-robust standard errors (cluster at municipality level) ===
+
+cluster_se <- vcovHC(fe_iv_model, type = "HC1", cluster = "group")
+coeftest(fe_iv_model, vcov = cluster_se)
+```
+
+
+```{r}
+# === 7. First-stage diagnostics using ivreg ===
+# Add factor fixed effects for a pooled IV regression to get first-stage F-statistic.
+dados_panel_ffx <- dados_panel %>%
+  mutate(
+    year_factor = factor(Year)
+  )
+
+iv_pooled <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + diversification_index + pib_per_capita +
+                      year_factor+ share_GDP_pub
+                    | shift_share_iv_milhoes + ln_pop + taxa_analfabetismo  + diversification_index + pib_per_capita +
+                      year_factor+ share_GDP_pub,
+  data = dados_panel_ffx
+)
+
+# Show diagnostics: the "Weak instruments" test reports the first-stage F-statistic.
+summary(iv_pooled, diagnostics = TRUE)
+
+
+```
+```{r}
+dados_panel_ffx <- dados_panel %>%
+  mutate(
+    year_factor = factor(Year)
+  )
+
+iv_pooled <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes + year_factor
+                    | shift_share_iv_milhoes + year_factor,
+  data = dados_panel_ffx
+)
+
+# Show diagnostics: the "Weak instruments" test reports the first-stage F-statistic.
+summary(iv_pooled, diagnostics = TRUE)
+
+```
+
+```{r}
+fe_model_2 <- plm::plm(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + share_GDP_pub + year_factor + diversification_index + pib_per_capita,
+  data  = dados_panel_ffx,
+  index = "codigo_do_municipio",
+  model = "within",
+  effect = "twoways"
+)
+summary(fe_model_2)
+```
+
+```{r}
+ba_panel <- dados_panel_ffx %>%
+  filter(UF == "BA")
+
+iv_pooled_ba <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + share_of_public_GDP +
+                      year_factor
+                    | shift_share_iv_milhoes + ln_pop + taxa_analfabetismo + share_of_public_GDP +
+                      year_factor,
+  data = ba_panel
+)
+
+# Show diagnostics: the "Weak instruments" test reports the first-stage F-statistic.
+summary(iv_pooled_ba, diagnostics = TRUE)
+```
+```{r}
+fe_model_ba <- plm::plm(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + share_of_public_GDP + year_factor,
+  data  = ba_panel,
+  index = c("codigo_do_municipio", "Year"),
+  model = "within",
+  effect = "twoways"
+)
+summary(fe_model_ba)
+```
+
+```{r}
+matopiba_panel <- dados_panel_ffx %>%
+  filter(UF == c("MA", "TO", "PI", "BA"))
+
+iv_pooled_matopiba <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes  + taxa_analfabetismo + year_factor + diversification_index + pib_per_capita + year_factor
+                    | shift_share_iv_milhoes  + taxa_analfabetismo + year_factor + diversification_index + pib_per_capita+year_factor,
+  data = matopiba_panel
+)
+
+# Show diagnostics: the "Weak instruments" test reports the first-stage F-statistic.
+summary(iv_pooled_matopiba, diagnostics = TRUE)
+```
+```{r}
+iv_pooled_simple_matopiba <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes + year_factor
+                    | shift_share_iv_milhoes + year_factor,
+  data = matopiba_panel
+)
+
+# Show diagnostics: the "Weak instruments" test reports the first-stage F-statistic.
+summary(iv_pooled_simple_matopiba, diagnostics = TRUE)
+```
+```{r}
+MA_panel <- dados_panel_ffx %>%
+  filter(UF == "MA")
+
+iv_pooled_ba <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + share_of_public_GDP +
+                      year_factor
+                    | shift_share_iv_milhoes + ln_pop + taxa_analfabetismo + share_of_public_GDP +
+                      year_factor,
+  data = MA_panel
+)
+
+# Show diagnostics: the "Weak instruments" test reports the first-stage F-statistic.
+summary(iv_pooled_ba, diagnostics = TRUE)
+```
+```{r}
+TO_panel <- dados_panel_ffx %>%
+  filter(UF == "TO")
+
+iv_pooled_ba <- AER::ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop + taxa_analfabetismo + share_of_public_GDP +
+                      year_factor
+                    | shift_share_iv_milhoes + ln_pop + taxa_analfabetismo + share_of_public_GDP +
+                      year_factor,
+  data = TO_panel
+)
+
+# Show diagnostics: the "Weak instruments" test reports the first-stage F-statistic.
+summary(iv_pooled_ba, diagnostics = TRUE)
+```
+# Divided Instrument
+
+```{r}
+library(tidyverse)
+library(AER)
+
+# --- 1. Construct baseline shares from the 2000 municipal data ---
+
+baseline <- read_csv("dados agricolas/valor_indiv_muni_2000.csv", show_col_types = FALSE) %>%
+  # Drop unnamed columns created from trailing commas (e.g. ...7)
+  select(-matches("^Unnamed|^\\.\\.\\.")) %>%
+  transmute(
+    codigo_do_municipio = as.integer(`Código`),
+    algodao  = as.numeric(`Produção - algodão - herbáceo (caroço) (2000)`),
+    milho    = as.numeric(`Produção - milho (2000)`),
+    soja     = as.numeric(`Produção - soja (2000)`)
+  )
+
+# Totals for each crop (all positive, so no need for if_else)
+total_algodao <- sum(baseline$algodao, na.rm = TRUE)
+total_milho   <- sum(baseline$milho,   na.rm = TRUE)
+total_soja    <- sum(baseline$soja,    na.rm = TRUE)
+
+# Shares for each municipality and crop
+baseline <- baseline %>%
+  mutate(
+    share_algodao = algodao / total_algodao,
+    share_milho   = milho   / total_milho,
+    share_soja    = soja    / total_soja
+  ) %>%
+  select(codigo_do_municipio, share_algodao, share_milho, share_soja)
+
+# --- 2. Read national production series for each crop ---
+
+read_national <- function(file, varname) {
+  read_csv(file, skip = 1, show_col_types = FALSE) %>%
+    select(-matches("^Unnamed|^\\.\\.\\.")) %>%
+    pivot_longer(
+      cols = -c(Sigla, Código, Brasil),
+      names_to  = "Year",
+      values_to = varname
+    ) %>%
+    mutate(Year = as.integer(Year))
+}
+
+alg_br   <- read_national("dados agricolas/alg_valor_br.csv",   "shock_algodao")
+milho_br <- read_national("dados agricolas/milho_valor_br.csv", "shock_milho")
+soja_br  <- read_national("dados agricolas/soja_valor_br.csv",  "shock_soja")
+
+# Combine national shocks into a single data frame keyed by Year
+shocks <- alg_br %>%
+  select(Year, shock_algodao) %>%
+  full_join(milho_br %>% select(Year, shock_milho), by = "Year") %>%
+  full_join(soja_br  %>% select(Year, shock_soja),  by = "Year")
+
+# --- 3. Cross‑join shares with shocks and build the instrument ---
+# Each row is a municipality–year combination
+instrument <- tidyr::crossing(baseline, shocks) %>%
+  mutate(
+    shift_share_iv_new = share_algodao * shock_algodao +
+                         share_milho   * shock_milho   +
+                         share_soja    * shock_soja,
+    # Rescale to match 'producao_milhoes' (divide by 1e6 if needed)
+    shift_share_iv_new_milhoes = shift_share_iv_new / 1e6
+  ) %>%
+  select(codigo_do_municipio, Year, shift_share_iv_new_milhoes)
+
+# --- 4. Merge the new instrument into your panel data ---
+# Replace 'dados_panel' with the name of your panel data frame
+dados_panel_final <- dados_panel_ffx %>%
+  left_join(instrument, by = c("codigo_do_municipio", "Year"))
+
+```
+```{r}
+# --- 4. Merge the new instrument into your panel data ---
+# Replace 'dados_panel' with the name of your panel data frame
+write.csv(dados_panel_final, file="dados_finais_tese_bartik.csv")
+
+```
+
+```{r}
+dados_panel_final <- read_csv("dados_finais_tese_bartik.csv")
+dados_panel_final <- dados_panel_final %>%
+  mutate(year_factor = as.factor(year_factor))
+iv_model_new <- ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop +
+                      taxa_analfabetismo  + year_factor
+                    | shift_share_iv_new_milhoes + ln_pop +
+                      taxa_analfabetismo  + year_factor,
+  data = dados_panel_final
+)
+
+summary(iv_model_new)
+
+```
+```{r}
+iv_model_new_more_controls <- ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop +
+                      taxa_analfabetismo  + year_factor + pib_per_capita  + share_GDP_pub+ diversification_index
+                    | shift_share_iv_new_milhoes + ln_pop +
+                      taxa_analfabetismo  + year_factor+ pib_per_capita + share_GDP_pub+ diversification_index ,
+  data = dados_panel_final
+)
+
+summary(iv_model_new_more_controls)
+```
+
+```{r}
+dados_panel_matopiba <- dados_panel_final %>%
+  filter(UF == c("MA", "TO", "PI", "BA"))
+
+iv_model_final_matopiba <- ivreg(
+  index_centrao_pct ~ producao_milhoes 
+                    | shift_share_iv_new_milhoes ,
+  data = dados_panel_matopiba
+)
+
+summary(iv_model_final_matopiba)
+  
+```
+```{r}
+iv_model_new_no_year_fx <- ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop + share_GDP_pub +
+                      taxa_analfabetismo + diversification_index +pib_per_capita
+                    | shift_share_iv_new_milhoes + ln_pop + share_GDP_pub +
+                      taxa_analfabetismo + diversification_index +pib_per_capita,
+  data = dados_panel_final
+)
+
+summary(iv_model_new_no_year_fx)
+```
+```{r}
+iv_model_new_no_controls <- ivreg(
+  index_centrao_pct ~ producao_milhoes
+                    | shift_share_iv_new_milhoes ,
+  data = dados_panel_final
+)
+
+summary(iv_model_new_no_controls)
+```
+
+
+
+```{r}
+dados_panel_ma <- dados_panel_final %>%
+  filter(UF == "MA")
+
+iv_model_final_ma <- ivreg(
+  index_centrao_pct ~ producao_milhoes
+                    | shift_share_iv_new_milhoes ,
+  data = dados_panel_ma
+)
+
+summary(iv_model_final_ma)
+```
+
+
+
+## Mais produtos 2001
+```{r}
+# --- Packages
+library(dplyr)
+library(tidyr)
+library(readr)
+library(AER)
+library(sandwich)
+library(lmtest)
+
+# ---------- A) BASELINE SHARES (within-municipality weights) ----------
+baseline <- read_csv("dados agricolas/valor_indiv_muni_2001.csv", show_col_types = FALSE) %>%
+  select(-matches("^Unnamed|^\\.\\.\\.")) %>%
+  transmute(
+    codigo_do_municipio = as.integer(`Código`),
+    algodao  = as.numeric(`Produção - algodão - herbáceo (caroço) (2001)`),
+    milho    = as.numeric(`Produção - milho (2001)`),
+    soja     = as.numeric(`Produção - soja (2001)`),
+    laranja  = as.numeric(`Produção - laranja (2001)`),
+    cafe     = as.numeric(`Produção - café (2001)`),
+    mandioca = as.numeric(`Produção - mandioca (2001)`),
+    arroz    = as.numeric(`Produção - arroz (2001)`),
+    cana     = as.numeric(`Produção - cana-de-açúcar (2001)`)
+  ) %>%
+  tidyr::replace_na(list(algodao = 0, milho = 0, soja = 0, laranja = 0,
+                         cafe = 0, mandioca = 0, arroz = 0, cana = 0)) %>%
+  mutate(total_agro = algodao + milho + soja + laranja + cafe + mandioca + arroz + cana)
+
+baseline_shares <- baseline %>%
+  mutate(across(algodao:cana,
+                ~ if_else(total_agro > 0, .x / total_agro, 0),
+                .names = "w_{.col}")) %>%
+  select(codigo_do_municipio, starts_with("w_"))
+
+# ---------- B) NATIONAL PRICE SHOCKS (log deviations from baseline year) ----------
+read_price_shocks <- function(file_path, baseline_year = 2002) {
+  df <- read_delim(file_path,
+                   delim = ";", skip = 3, col_names = TRUE, trim_ws = TRUE,
+                   locale = locale(decimal_mark = ","), show_col_types = FALSE) |>
+    select(1:2) |>
+    rename(Year = 1, price_BR = 2) |>
+    mutate(Year = as.integer(Year),
+           price_BR = as.numeric(price_BR)) |>
+    filter(!is.na(Year))
+
+  base_p <- if (baseline_year %in% df$Year) df$price_BR[df$Year == baseline_year] else df$price_BR[1]
+  df |>
+    mutate(log_shock = log(price_BR / base_p)) |>
+    select(Year, log_shock)
+}
+
+alg_br      <- read_price_shocks("dados agricolas/precos/cepea-algodao.csv")  %>% rename(shock_algodao  = log_shock)
+milho_br    <- read_price_shocks("dados agricolas/precos/cepea-milho.csv")    %>% rename(shock_milho    = log_shock)
+soja_br     <- read_price_shocks("dados agricolas/precos/cepea-soja.csv")     %>% rename(shock_soja     = log_shock)
+laranja_br  <- read_price_shocks("dados agricolas/precos/cepea-laranja.csv")  %>% rename(shock_laranja  = log_shock)
+cafe_br     <- read_price_shocks("dados agricolas/precos/cepea-cafe.csv")     %>% rename(shock_cafe     = log_shock)
+mandioca_br <- read_price_shocks("dados agricolas/precos/cepea-mandioca.csv") %>% rename(shock_mandioca = log_shock)
+arroz_br    <- read_price_shocks("dados agricolas/precos/cepea-arroz.csv")    %>% rename(shock_arroz    = log_shock)
+cana_br     <- read_price_shocks("dados agricolas/precos/cepea-cana.csv")     %>% rename(shock_cana     = log_shock)
+
+shocks <- list(alg_br, milho_br, soja_br, laranja_br, cafe_br, mandioca_br, arroz_br, cana_br) %>%
+  reduce(full_join, by = "Year") %>% arrange(Year)
+
+# ---------- C) BUILD THE BARTIK INSTRUMENT ----------
+instrument <- tidyr::crossing(baseline_shares, shocks) %>%
+  mutate(
+    bartik_price_iv =
+      w_algodao  * shock_algodao  +
+      w_milho    * shock_milho    +
+      w_soja     * shock_soja     +
+      w_laranja  * shock_laranja  +
+      w_cafe     * shock_cafe     +
+      w_mandioca * shock_mandioca +
+      w_arroz    * shock_arroz    +
+      w_cana     * shock_cana
+  ) %>%
+  select(codigo_do_municipio, Year, bartik_price_iv)
+
+# ---------- D) MERGE INTO YOUR PANEL (this is the step that was missing) ----------
+dados_panel_final_2 <- dados_panel %>%
+  mutate(
+    codigo_do_municipio = as.integer(codigo_do_municipio),
+    Year = as.integer(Year),
+    year_factor = as.factor(Year)
+  ) %>%
+  left_join(instrument, by = c("codigo_do_municipio", "Year"))
+
+# sanity checks
+stopifnot("bartik_price_iv" %in% names(dados_panel_final_2))
+cat("Instrument NAs:", sum(is.na(dados_panel_final_2$bartik_price_iv)), "\n")
+
+# ---------- E) RUN THE IV REGRESSION + DIAGNOSTICS ----------
+iv_model_new_2 <- ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop + year_factor + share_GDP_pub |
+    bartik_price_iv + ln_pop + year_factor + share_GDP_pub,
+  data = dados_panel_final_2
+)
+
+summary(iv_model_new_2, diagnostics = TRUE)
+
+# Cluster-robust SE (by municipality), if you want to report them:
+V_iv <- vcovCL(iv_model_new_2, cluster = dados_panel_final_2$codigo_do_municipio, type = "HC1")
+coeftest(iv_model_new_2, vcov. = V_iv)
+
+```
+```{r}
+write.csv(dados_panel_final_v2, file="dados_finais_tese_bartik_v2.csv")
+```
+
+```{r}
+dados_panel_final_2 <- read_csv("dados_finais_tese_bartik_v2.csv")
+```
+```{r}
+dados_panel_final_2 <- dados_panel_final_2  %>%
+  mutate(year_factor = as.factor(year_factor))
+iv_model_new_2 <- ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop  + year_factor + share_GDP_pub
+                    | bartik_price_iv + ln_pop  + year_factor  + share_GDP_pub,
+  data = dados_panel_final_2
+)
+
+summary(iv_model_new_2, diagnostics=TRUE)
+```
+
+
+```{r}
+iv_model_new_more_controls_2 <- ivreg(
+  index_centrao_pct ~ producao_milhoes + ln_pop  + year_factor + pib_per_capita  + share_GDP_pub+ diversification_index
+                    | bartik_price_iv + ln_pop  + year_factor+ pib_per_capita + share_GDP_pub+ diversification_index ,
+  data = dados_panel_final_2
+)
+
+summary(iv_model_new_more_controls_2, diagnostics = TRUE)
+```
+```{r}
+iv_model_new_no_controls_2 <- ivreg(
+  index_centrao_pct ~ producao_milhoes + year_factor + ln_pop + pib_per_capita
+                    | bartik_price_iv + year_factor + ln_pop + pib_per_capita ,
+  data = dados_panel_final_2
+)
+
+summary(iv_model_new_no_controls_2, diagnostics = TRUE)
+```
+```{r}
+iv_model_new_no_controls_2 <- ivreg(
+  index_centrao_pct ~ producao_milhoes + year_factor + ln_pop
+                    | bartik_price_iv + year_factor + ln_pop ,
+  data = dados_panel_final_2
+)
+
+summary(iv_model_new_no_controls_2)
+```
+
+```{r}
+iv_model_new_no_controls_2 <- ivreg(
+  index_centrao_pct ~ producao_milhoes + year_factor 
+                    | bartik_price_iv + year_factor ,
+  data = dados_panel_final_2
+)
+
+summary(iv_model_new_no_controls_2, diagnostics=TRUE)
+```
+
+```{r}
+iv_model_new_no_controls_2 <- ivreg(
+  index_centrao_pct ~ producao_milhoes  + ln_pop +pib_per_capita
+                    | bartik_price_iv + ln_pop +pib_per_capita,
+  data = dados_panel_final_2
+)
+
+summary(iv_model_new_no_controls_2, diagnostics = TRUE)
+```
+```{r}
+fe_model_new <- plm::plm(
+  index_centrao_pct ~ year_factor + bartik_price_iv,
+  data  = dados_panel_final_2,
+  index = c("codigo_do_municipio"),
+  model = "within",
+  effect = "twoways"
+)
+summary(fe_model_new)
+```
+```{r}
+fe_model_new_2 <- plm::plm(
+  index_centrao_pct ~ ln_pop + share_GDP_pub + pib_per_capita + year_factor + bartik_price_iv,
+  data  = dados_panel_final_2,
+  index = c("codigo_do_municipio"),
+  model = "within",
+  effect = "twoways"
+)
+summary(fe_model_new_2)
+```
+
+```{r}
+# Same sample filter as your 2SLS model
+          # or the model you want
+fs1 <- lm(producao_milhoes ~ bartik_price_iv + year_factor, data = dados_panel_final_2)
+fs2 <- lm(producao_milhoes ~ bartik_price_iv + ln_pop + pib_per_capita +
+                            share_GDP_pub + diversification_index + year_factor,
+          data = dados_panel_final_2)
+
+library(lmtest); library(sandwich)
+coeftest(fs1, vcov. = vcovCL(fs1, cluster = ~ codigo_do_municipio, type = "HC1"))
+coeftest(fs2, vcov. = vcovCL(fs2, cluster = ~ codigo_do_municipio, type = "HC1"))
+
+# KP first-stage F as in the 2SLS summary (already shown), but you can also report Sanderson–Windmeijer if you add >1 IV.
+
+```
+```{r}
+dados_panel_final_2 <- dados_panel_final_2 %>%
+  mutate(ln_producao = log(pmax(producao_milhoes, 0) + 1))  # guard for zeros
+
+iv_log <- AER::ivreg(
+  index_centrao_pct ~ ln_producao + ln_pop + pib_per_capita + share_GDP_pub + year_factor |
+                      bartik_price_iv + ln_pop + pib_per_capita + share_GDP_pub + year_factor,
+  data = dados_panel_final_2
+)
+summary(iv_log, diagnostics = TRUE)
+
+```
+
+```{r}
+library(fixest)
+
+feiv <- feols(
+  index_centrao_pct ~ ln_pop + pib_per_capita + share_GDP_pub | 
+    codigo_do_municipio + year_factor,
+  iv = ~ ln_producao ~ bartik_price_iv,
+  data = dados_panel_final_2,
+  cluster = ~ codigo_do_municipio
+)
+etable(feiv, dict = c(ln_producao = "Log agr. production"))
+
+```
+
+```{r}
+dados_panel_final_2 <- dados_panel_final_2 |>
+  mutate(          # 0–1
+    ln_prod = log1p(producao_milhoes)  # deflate first; keep in millions R$
+  )
+```
+```{r}
+fs <- lm(ln_prod ~ bartik_price_iv + ln_pop + pib_per_capita + share_GDP_pub + factor(year_factor),
+         data = dados_panel_final_2)
+summary(fs)  # coefficient on bartik_price_iv should be + and large t-stat
+
+```
+```{r}
+m_iv <- ivreg(index_centrao ~ ln_prod + ln_pop + pib_per_capita + share_GDP_pub + factor(year_factor) |
+                        bartik_price_iv + ln_pop + pib_per_capita + share_GDP_pub + factor(year_factor),
+              data = dados_panel_final_2)
+summary(m_iv, diagnostics = TRUE)
+library(sandwich); library(lmtest)
+V <- vcovCL(m_iv, cluster = ~ codigo_do_municipio, type = "HC1")
+coeftest(m_iv, vcov. = V)
+
+```
+```{r}
+# --- Packages ---
+library(dplyr)
+library(AER)         # ivreg
+library(sandwich)    # vcovCL
+library(lmtest)      # coeftest
+library(fixest)      # two-way FE + IV
+library(stargazer)   # pretty table (optional)
+
+# --- Data prep (safe defaults) ---
+df <- dados_panel_final_2 %>%
+  mutate(
+    year_factor = as.factor(year_factor),
+    ln_prod = dplyr::coalesce(ln_prod, log(pmax(producao_milhoes, 1e-6))),
+    ln_pop = dplyr::coalesce(ln_pop, log(pmax(populacao, 1)))
+  ) %>%
+  select(codigo_do_municipio, year_factor, index_centrao, ln_prod,
+         bartik_price_iv, ln_pop, pib_per_capita) %>%
+  drop_na()
+
+# ------------- Block A: First stage -------------
+# FS–Y (pooled OLS with year FE)
+fs_y <- lm(ln_prod ~ bartik_price_iv + ln_pop + pib_per_capita + year_factor, data = df)
+coeftest(fs_y, vcov = vcovCL(fs_y, cluster = df$codigo_do_municipio, type = "HC1"))
+```
+
+```{r}
+# FS–TWFE (two-way FE OLS)
+fs_twfe <- feols(
+  ln_prod ~ bartik_price_iv + ln_pop + pib_per_capita |
+    codigo_do_municipio + year_factor,
+  data = df, cluster = ~ codigo_do_municipio
+)
+summary(fs_twfe)
+
+# ------------- Block B: OLS benchmarks -------------
+ols_y <- lm(index_centrao ~ ln_prod + year_factor, data = df)
+ols_yc <- lm(index_centrao ~ ln_prod + ln_pop + pib_per_capita + year_factor, data = df)
+
+# Clustered SEs
+V_ols_y  <- vcovCL(ols_y,  cluster = df$codigo_do_municipio, type = "HC1")
+V_ols_yc <- vcovCL(ols_yc, cluster = df$codigo_do_municipio, type = "HC1")
+coeftest(ols_y,  vcov = V_ols_y)
+coeftest(ols_yc, vcov = V_ols_yc)
+```
+
+```{r}
+
+# ------------- Block C: IV (pooled 2SLS) -------------
+iv_y <- ivreg(
+  index_centrao ~ ln_prod + year_factor |
+    bartik_price_iv + year_factor,
+  data = df
+)
+
+iv_yc <- ivreg(
+  index_centrao ~ ln_prod + ln_pop + pib_per_capita+ year_factor |
+    bartik_price_iv + ln_pop + pib_per_capita + year_factor,
+  data = df
+)
+
+# Clustered SEs for IV
+V_iv_y  <- vcovCL(iv_y,  cluster = df$codigo_do_municipio, type = "HC1")
+V_iv_yc <- vcovCL(iv_yc, cluster = df$codigo_do_municipio, type = "HC1")
+
+cat("\n=== IV-Y (diagnostics) ===\n")
+print(summary(iv_y, diagnostics = TRUE))
+cat("\n=== IV-Y+Ctrls (diagnostics) ===\n")
+print(summary(iv_yc, diagnostics = TRUE))
+
+coeftest(iv_y,  vcov = V_iv_y)
+coeftest(iv_yc, vcov = V_iv_yc)
+```
+
+```{r}
+
+# ------------- Block E: Reduced form (appendix) -------------
+rf_twfe <- feols(
+  index_centrao ~ bartik_price_iv + ln_pop + pib_per_capita  |
+    codigo_do_municipio + year_factor,
+  data = df, cluster = ~ codigo_do_municipio
+)
+summary(rf_twfe)
+
+```
+
+```{r}
+
+# ------------- Publication-style table (OLS vs IV, pooled year FE) -------------
+# Same sample across columns:
+keep_vars <- c("(Intercept)","ln_prod","ln_pop","pib_per_capita")
+get_se <- function(m, V) unname(sqrt(diag(V))[intersect(names(coef(m)), keep_vars)])
+
+se1 <- get_se(ols_yc,  V_ols_yc)
+se2 <- get_se(iv_yc,   V_iv_yc)
+
+add_lines <- list(
+  c("Year fixed effects", "yes", "yes"),
+  c("First-stage F (KP)", "", sprintf("%.1f",
+     as.numeric(summary(iv_yc, diagnostics=TRUE)$diagnostics["Weak instruments","statistic"]))),
+  c("Wu–Hausman p", "",
+     sprintf("%.3f",
+     as.numeric(summary(iv_yc, diagnostics=TRUE)$diagnostics["Wu-Hausman","p-value"]))))
+stargazer(ols_yc, iv_yc,
+          type = "latex",
+          title = "Centrão Index — OLS vs IV (pooled, year FE)",
+          dep.var.labels = "Centrão Index",
+          column.labels = c("OLS + ctrls + year FE", "IV + ctrls + year FE"),
+          keep = paste0("^(", paste(gsub("\\(", "\\\\(", gsub("\\)", "\\\\)", keep_vars)), collapse="|"), ")$"),
+          covariate.labels = c("Constant","Log production","Log population","GDP per capita"),
+          se = list(se1, se2),
+          star.cutoffs = c(.10,.05,.01),
+          omit.stat = c("f","ser","aic","bic","ll"),
+          keep.stat = c("n","rsq"),
+          add.lines = add_lines,
+          notes = c("Municipality-clustered SEs (HC1) in parentheses.",
+                    "* p<0.10, ** p<0.05, *** p<0.01"),
+          notes.append = FALSE)
+
+```
+
+
+
